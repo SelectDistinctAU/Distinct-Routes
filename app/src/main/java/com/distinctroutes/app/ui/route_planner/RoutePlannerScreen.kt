@@ -67,6 +67,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -111,6 +112,10 @@ fun RoutePlannerScreen(
     var isBannerVisible by remember { mutableStateOf(true) }
     var showSavedSnackbar by remember { mutableStateOf(false) }
     var isTopCardCollapsed by remember { mutableStateOf(false) }
+
+    var showLongPressMenu by remember { mutableStateOf(false) }
+    var longPressLat by remember { mutableDoubleStateOf(0.0) }
+    var longPressLon by remember { mutableDoubleStateOf(0.0) }
 
     // Auto-collapse search inputs card when route calculation succeeds
     LaunchedEffect(uiState) {
@@ -160,8 +165,41 @@ fun RoutePlannerScreen(
             onStartPinMoved = { lat, lon -> viewModel.onStartPinMoved(lat, lon) },
             onEndPinMoved = { lat, lon -> viewModel.onEndPinMoved(lat, lon) },
             onViaPinMoved = { idx, lat, lon -> viewModel.onViaPinMoved(idx, lat, lon) },
+            onMapLongPress = { lat, lon ->
+                longPressLat = lat
+                longPressLon = lon
+                showLongPressMenu = true
+            },
             modifier = Modifier.fillMaxSize()
         )
+
+        // Map Long-Press Contextual Menu
+        DropdownMenu(
+            expanded = showLongPressMenu,
+            onDismissRequest = { showLongPressMenu = false }
+        ) {
+            DropdownMenuItem(
+                text = { Text("▶ Set as Start Location") },
+                onClick = {
+                    viewModel.setStartFromMap(longPressLat, longPressLon)
+                    showLongPressMenu = false
+                }
+            )
+            DropdownMenuItem(
+                text = { Text("● Add as Via Stop") },
+                onClick = {
+                    viewModel.addViaFromMap(longPressLat, longPressLon)
+                    showLongPressMenu = false
+                }
+            )
+            DropdownMenuItem(
+                text = { Text("■ Set as Destination") },
+                onClick = {
+                    viewModel.setEndFromMap(longPressLat, longPressLon)
+                    showLongPressMenu = false
+                }
+            )
+        }
 
         // ==========================================
         // TOP FLOATING OVERLAY CARD: Inputs & Preferences
@@ -226,14 +264,14 @@ fun RoutePlannerScreen(
                     }
                 }
             } else {
-                // FULL EXPANDED INPUT CONTROLS CARD
+                // COMPACT EXPANDED INPUT CONTROLS CARD
                 Card(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)),
                     shape = CardShape,
                     elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(max = 520.dp)
+                        .heightIn(max = 420.dp)
                 ) {
                     Column(
                         modifier = Modifier
@@ -241,7 +279,7 @@ fun RoutePlannerScreen(
                             .verticalScroll(rememberScrollState()),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        // Header Logo Bar with Collapse Button if Success
+                        // Header Logo Bar with Collapse Button
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
@@ -254,12 +292,19 @@ fun RoutePlannerScreen(
                                     modifier = Modifier.size(32.dp)
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = stringResource(R.string.app_name),
-                                    style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
+                                Column {
+                                    Text(
+                                        text = stringResource(R.string.app_name),
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                    Text(
+                                        text = "💡 Long-press map anytime to set Start / Destination",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                             }
 
                             if (uiState is RoutePlannerUiState.Success) {
@@ -330,7 +375,7 @@ fun RoutePlannerScreen(
                             }
                         }
 
-                        // START Address Input with Explicit Search & Pin Drop Buttons
+                        // START Address Input with Search, Pin Drop, GPS
                         Box {
                             OutlinedTextField(
                                 value = startAddress,
@@ -466,18 +511,18 @@ fun RoutePlannerScreen(
                             onClick = { viewModel.addViaStop() },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(48.dp)
+                                .height(44.dp)
                                 .semantics { contentDescription = "Add mid-point via stop button" }
                         ) {
                             Icon(Icons.Default.Add, contentDescription = null)
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = if (viaStops.isEmpty()) stringResource(R.string.btn_add_via_stop) else "Add Another Stop (Trail/Loop)",
-                                style = MaterialTheme.typography.titleMedium
+                                style = MaterialTheme.typography.titleSmall
                             )
                         }
 
-                        // DESTINATION Address Input with Explicit Search & Pin Drop Buttons
+                        // DESTINATION Address Input with Search, Pin Drop, Swap
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically
@@ -544,7 +589,7 @@ fun RoutePlannerScreen(
                             }
                         }
 
-                        // Explicit "Calculate Route Now" Button on Address Card
+                        // Explicit "Calculate Route Now" Button
                         Button(
                             onClick = { viewModel.calculateRoute() },
                             shape = PillShape,
@@ -926,12 +971,12 @@ fun RoutePlannerScreen(
                                             Toast.makeText(context, "Exported GPX file to cache.", Toast.LENGTH_LONG).show()
                                         }
                                     },
-                                    modifier = Modifier.weight(1.2f)
+                                    modifier = Modifier.weight(1.3f)
                                 ) {
                                     Icon(Icons.Default.Navigation, contentDescription = null, modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(4.dp))
                                     Text(
-                                        text = "Navigate",
+                                        text = "Launch OsmAnd",
                                         maxLines = 1,
                                         style = MaterialTheme.typography.labelMedium
                                     )

@@ -211,6 +211,43 @@ class RoutePlannerViewModel @Inject constructor(
         }
     }
 
+    fun setStartFromMap(lat: Double, lon: Double) {
+        startLat = lat
+        startLon = lon
+        viewModelScope.launch {
+            geocodingUseCase.reverseGeocode(lat, lon).onSuccess { address ->
+                startAddressText.value = address
+            }
+            if (startAddressText.value.isNotBlank() && endAddressText.value.isNotBlank()) {
+                calculateRoute()
+            }
+        }
+    }
+
+    fun setEndFromMap(lat: Double, lon: Double) {
+        endLat = lat
+        endLon = lon
+        viewModelScope.launch {
+            geocodingUseCase.reverseGeocode(lat, lon).onSuccess { address ->
+                endAddressText.value = address
+            }
+            if (startAddressText.value.isNotBlank() && endAddressText.value.isNotBlank()) {
+                calculateRoute()
+            }
+        }
+    }
+
+    fun addViaFromMap(lat: Double, lon: Double) {
+        viewModelScope.launch {
+            geocodingUseCase.reverseGeocode(lat, lon).onSuccess { address ->
+                addViaStop(address = address, lat = lat, lon = lon)
+                if (startAddressText.value.isNotBlank() && endAddressText.value.isNotBlank()) {
+                    calculateRoute()
+                }
+            }
+        }
+    }
+
     fun useCurrentGpsLocation() {
         viewModelScope.launch {
             _uiState.value = RoutePlannerUiState.Loading

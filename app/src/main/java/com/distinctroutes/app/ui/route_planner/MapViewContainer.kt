@@ -3,14 +3,11 @@ package com.distinctroutes.app.ui.route_planner
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Path
-import android.graphics.RectF
 import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.Drawable
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -18,8 +15,9 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat
+import com.distinctroutes.app.R
 import org.osmdroid.config.Configuration
 import org.osmdroid.events.MapEventsReceiver
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
@@ -40,7 +38,8 @@ fun MapViewContainer(
     routePoints: List<Pair<Double, Double>> = emptyList(),
     onStartPinMoved: (Double, Double) -> Unit = { _, _ -> },
     onEndPinMoved: (Double, Double) -> Unit = { _, _ -> },
-    onViaPinMoved: (index: Int, Double, Double) -> Unit = { _, _, _ -> }
+    onViaPinMoved: (index: Int, Double, Double) -> Unit = { _, _, _ -> },
+    onMapLongPress: (Double, Double) -> Unit = { _, _ -> }
 ) {
     val context = LocalContext.current
 
@@ -65,6 +64,19 @@ fun MapViewContainer(
                 setTileSource(TileSourceFactory.MAPNIK)
                 setMultiTouchControls(true)
                 controller.setZoom(13.0)
+
+                val mapEventsReceiver = object : MapEventsReceiver {
+                    override fun singleTapConfirmedHelper(p: GeoPoint?): Boolean = false
+
+                    override fun longPressHelper(p: GeoPoint?): Boolean {
+                        if (p != null) {
+                            onMapLongPress(p.latitude, p.longitude)
+                            return true
+                        }
+                        return false
+                    }
+                }
+                overlays.add(0, MapEventsOverlay(mapEventsReceiver))
             }
         },
         onRelease = { map ->
@@ -87,270 +99,162 @@ fun MapViewContainer(
                 // Ignore resume errors
             }
 
+            // Keep base MapEventsOverlay at index 0
+            val eventsOverlay = map.overlays.firstOrNull { it is MapEventsOverlay }
             map.overlays.clear()
+            if (eventsOverlay != null) {
+                map.overlays.add(eventsOverlay)
+            }
 
-            val startPoint = GeoPoint(startLat, startLon)
-            val endPoint = GeoPoint(endLat, endLon)
-
-            // Draw Route Polyline if points available
-            if (routePoints.isNotEmpty()) {
-                val geoPoints = routePoints.map { GeoPoint(it.first, it.second) }
-                val polyline = Polyline().apply {
-                    outlinePaint.color = Color.parseColor("#1565C0")
+            // Render route polyline if available
+            if (routePoints.size >= 2) {
+                val polyline = Polyline(map).apply {
+                    val geoPoints = routePoints.map { GeoPoint(it.first, it.second) }
+                    setPoints(geoPoints)
+                    outlinePaint.color = android.graphics.Color.parseColor("#1565C0")
                     outlinePaint.strokeWidth = 14f
                     outlinePaint.strokeCap = Paint.Cap.ROUND
-                    setPoints(geoPoints)
+                    outlinePaint.strokeJoin = Paint.Join.ROUND
                 }
                 map.overlays.add(polyline)
-            } else {
-                map.controller.setCenter(startPoint)
             }
 
-            // Start Marker (Green Pin with Play Arrow ▶)
-            val startMarker = Marker(map).apply {
-                position = startPoint
-                title = "Start Location (Play Arrow ▶)"
-                snippet = "Lat: %.4f, Lon: %.4f".format(startLat, startLon)
-                icon = startIcon
-                setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-                isDraggable = true
-                setOnMarkerDragListener(object : Marker.OnMarkerDragListener {
-                    override fun onMarkerDrag(marker: Marker) {}
-                    override fun onMarkerDragStart(marker: Marker) {}
-                    override fun onMarkerDragEnd(marker: Marker) {
-                        onStartPinMoved(marker.position.latitude, marker.position.longitude)
-                    }
-                })
-            }
-            map.overlays.add(startMarker)
-
-            // Multiple Via Markers (Yellow Pin with Dot ●)
-            viaWaypoints.forEachIndexed { index, (vLat, vLon) ->
-                val viaPoint = GeoPoint(vLat, vLon)
-                val viaMarker = Marker(map).apply {
-                    position = viaPoint
-                    title = "Via Stop #${index + 1} (Yellow Dot ●)"
-                    snippet = "Lat: %.4f, Lon: %.4f".format(vLat, vLon)
-                    icon = viaIcon
+            // Start Pin Marker
+            if (startLat != 0.0 && startLon != 0.0) {
+                val startMarker = Marker(map).apply {
+                    position = GeoPoint(startLat, startLon)
+                    title = "Start Location"
+                    icon = startIcon
                     setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
                     isDraggable = true
                     setOnMarkerDragListener(object : Marker.OnMarkerDragListener {
                         override fun onMarkerDrag(marker: Marker) {}
                         override fun onMarkerDragStart(marker: Marker) {}
                         override fun onMarkerDragEnd(marker: Marker) {
-                            onViaPinMoved(index, marker.position.latitude, marker.position.longitude)
+                            onStartPinMoved(marker.position.latitude, marker.position.longitude)
                         }
                     })
                 }
-                map.overlays.add(viaMarker)
+                map.overlays.add(startMarker)
             }
 
-            // End Marker (Red Pin with Stop Square ■)
-            val endMarker = Marker(map).apply {
-                position = endPoint
-                title = "Destination Location (Stop Square ■)"
-                snippet = "Lat: %.4f, Lon: %.4f".format(endLat, endLon)
-                icon = endIcon
-                setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
-                isDraggable = true
-                setOnMarkerDragListener(object : Marker.OnMarkerDragListener {
-                    override fun onMarkerDrag(marker: Marker) {}
-                    override fun onMarkerDragStart(marker: Marker) {}
-                    override fun onMarkerDragEnd(marker: Marker) {
-                        onEndPinMoved(marker.position.latitude, marker.position.longitude)
+            // Multi-Stop Via Waypoint Markers
+            viaWaypoints.forEachIndexed { idx, viaPair ->
+                if (viaPair.first != 0.0 && viaPair.second != 0.0) {
+                    val viaMarker = Marker(map).apply {
+                        position = GeoPoint(viaPair.first, viaPair.second)
+                        title = "Via Stop #${idx + 1}"
+                        icon = viaIcon
+                        setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
+                        isDraggable = true
+                        setOnMarkerDragListener(object : Marker.OnMarkerDragListener {
+                            override fun onMarkerDrag(marker: Marker) {}
+                            override fun onMarkerDragStart(marker: Marker) {}
+                            override fun onMarkerDragEnd(marker: Marker) {
+                                onViaPinMoved(idx, marker.position.latitude, marker.position.longitude)
+                            }
+                        })
                     }
-                })
+                    map.overlays.add(viaMarker)
+                }
             }
-            map.overlays.add(endMarker)
 
-            // Map click listener for quick pin selection
-            val eventsOverlay = MapEventsOverlay(object : MapEventsReceiver {
-                override fun singleTapConfirmedHelper(p: GeoPoint?): Boolean {
-                    p?.let {
-                        onEndPinMoved(it.latitude, it.longitude)
-                    }
-                    return true
+            // Destination Pin Marker
+            if (endLat != 0.0 && endLon != 0.0) {
+                val endMarker = Marker(map).apply {
+                    position = GeoPoint(endLat, endLon)
+                    title = "Destination"
+                    icon = endIcon
+                    setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                    isDraggable = true
+                    setOnMarkerDragListener(object : Marker.OnMarkerDragListener {
+                        override fun onMarkerDrag(marker: Marker) {}
+                        override fun onMarkerDragStart(marker: Marker) {}
+                        override fun onMarkerDragEnd(marker: Marker) {
+                            onEndPinMoved(marker.position.latitude, marker.position.longitude)
+                        }
+                    })
                 }
-                override fun longPressHelper(p: GeoPoint?): Boolean {
-                    p?.let {
-                        onStartPinMoved(it.latitude, it.longitude)
-                    }
-                    return true
-                }
-            })
-            map.overlays.add(eventsOverlay)
+                map.overlays.add(endMarker)
+            }
 
+            // Center map on Start location or Perth
+            val centerLat = if (startLat != 0.0) startLat else -31.9505
+            val centerLon = if (startLon != 0.0) startLon else 115.8605
+            map.controller.setCenter(GeoPoint(centerLat, centerLon))
             map.invalidate()
         }
     )
 }
 
-/**
- * BBBike Green Start Pin with Play Arrow (▶) symbol.
- */
-private fun createBbbikeStartPin(context: Context): BitmapDrawable {
-    val density = context.resources.displayMetrics.density
-    val width = (42 * density).toInt()
-    val height = (54 * density).toInt()
-    val radius = 18 * density
-
-    val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+private fun createBbbikeStartPin(context: Context): Drawable {
+    val size = 96
+    val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
     val canvas = Canvas(bitmap)
 
-    val greenColor = Color.parseColor("#2E7D32")
-
-    val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = greenColor
+    val pinPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.parseColor("#1B5E20")
         style = Paint.Style.FILL
     }
-    val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.WHITE
-        style = Paint.Style.STROKE
-        strokeWidth = 3 * density
-    }
-
-    val centerX = width / 2f
-    val centerY = radius + 3 * density
-
-    // Circular Pin Head & Teardrop Tip
-    canvas.drawCircle(centerX, centerY, radius, fillPaint)
-    canvas.drawCircle(centerX, centerY, radius, strokePaint)
-
     val path = Path().apply {
-        moveTo(centerX - radius * 0.5f, centerY + radius * 0.7f)
-        lineTo(centerX + radius * 0.5f, centerY + radius * 0.7f)
-        lineTo(centerX, height - 2 * density)
+        moveTo(size / 2f, size.toFloat())
+        cubicTo(size * 0.1f, size * 0.5f, 0f, size * 0.35f, size / 2f, 0f)
+        cubicTo(size.toFloat(), size * 0.35f, size * 0.9f, size * 0.5f, size / 2f, size.toFloat())
         close()
     }
-    canvas.drawPath(path, fillPaint)
+    canvas.drawPath(path, pinPaint)
 
-    // Inner White Circle
-    val whitePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.WHITE
+    val innerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.WHITE
         style = Paint.Style.FILL
     }
-    canvas.drawCircle(centerX, centerY, radius * 0.55f, whitePaint)
-
-    // Green Play Arrow (▶)
-    val playPath = Path().apply {
-        val arrowSize = radius * 0.32f
-        moveTo(centerX - arrowSize * 0.4f, centerY - arrowSize)
-        lineTo(centerX + arrowSize * 0.7f, centerY)
-        lineTo(centerX - arrowSize * 0.4f, centerY + arrowSize)
-        close()
-    }
-    canvas.drawPath(playPath, fillPaint)
+    canvas.drawCircle(size / 2f, size * 0.35f, size * 0.18f, innerPaint)
 
     return BitmapDrawable(context.resources, bitmap)
 }
 
-/**
- * BBBike Yellow Via Pin with Dot (●) symbol.
- */
-private fun createBbbikeViaPin(context: Context): BitmapDrawable {
-    val density = context.resources.displayMetrics.density
-    val width = (42 * density).toInt()
-    val height = (54 * density).toInt()
-    val radius = 18 * density
-
-    val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+private fun createBbbikeEndPin(context: Context): Drawable {
+    val size = 96
+    val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
     val canvas = Canvas(bitmap)
 
-    val yellowColor = Color.parseColor("#F57F17")
-
-    val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = yellowColor
+    val pinPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.parseColor("#B71C1C")
         style = Paint.Style.FILL
     }
-    val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.WHITE
-        style = Paint.Style.STROKE
-        strokeWidth = 3 * density
-    }
-
-    val centerX = width / 2f
-    val centerY = radius + 3 * density
-
-    // Circular Pin Head & Teardrop Tip
-    canvas.drawCircle(centerX, centerY, radius, fillPaint)
-    canvas.drawCircle(centerX, centerY, radius, strokePaint)
-
     val path = Path().apply {
-        moveTo(centerX - radius * 0.5f, centerY + radius * 0.7f)
-        lineTo(centerX + radius * 0.5f, centerY + radius * 0.7f)
-        lineTo(centerX, height - 2 * density)
+        moveTo(size / 2f, size.toFloat())
+        cubicTo(size * 0.1f, size * 0.5f, 0f, size * 0.35f, size / 2f, 0f)
+        cubicTo(size.toFloat(), size * 0.35f, size * 0.9f, size * 0.5f, size / 2f, size.toFloat())
         close()
     }
-    canvas.drawPath(path, fillPaint)
+    canvas.drawPath(path, pinPaint)
 
-    // Inner White Circle
-    val whitePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.WHITE
+    val innerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.WHITE
         style = Paint.Style.FILL
     }
-    canvas.drawCircle(centerX, centerY, radius * 0.55f, whitePaint)
-
-    // Yellow Dot (●)
-    canvas.drawCircle(centerX, centerY, radius * 0.32f, fillPaint)
+    canvas.drawCircle(size / 2f, size * 0.35f, size * 0.18f, innerPaint)
 
     return BitmapDrawable(context.resources, bitmap)
 }
 
-/**
- * BBBike Red Destination Pin with Stop Square (■) symbol.
- */
-private fun createBbbikeEndPin(context: Context): BitmapDrawable {
-    val density = context.resources.displayMetrics.density
-    val width = (42 * density).toInt()
-    val height = (54 * density).toInt()
-    val radius = 18 * density
-
-    val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+private fun createBbbikeViaPin(context: Context): Drawable {
+    val size = 48
+    val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
     val canvas = Canvas(bitmap)
 
-    val redColor = Color.parseColor("#C62828")
-
-    val fillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = redColor
+    val outerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.parseColor("#F57F17")
         style = Paint.Style.FILL
     }
-    val strokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.WHITE
-        style = Paint.Style.STROKE
-        strokeWidth = 3 * density
-    }
+    canvas.drawCircle(size / 2f, size / 2f, size / 2f, outerPaint)
 
-    val centerX = width / 2f
-    val centerY = radius + 3 * density
-
-    // Circular Pin Head & Teardrop Tip
-    canvas.drawCircle(centerX, centerY, radius, fillPaint)
-    canvas.drawCircle(centerX, centerY, radius, strokePaint)
-
-    val path = Path().apply {
-        moveTo(centerX - radius * 0.5f, centerY + radius * 0.7f)
-        lineTo(centerX + radius * 0.5f, centerY + radius * 0.7f)
-        lineTo(centerX, height - 2 * density)
-        close()
-    }
-    canvas.drawPath(path, fillPaint)
-
-    // Inner White Circle
-    val whitePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.WHITE
+    val innerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.WHITE
         style = Paint.Style.FILL
     }
-    canvas.drawCircle(centerX, centerY, radius * 0.55f, whitePaint)
-
-    // Red Stop Square (■)
-    val squareSize = radius * 0.32f
-    val squareRect = RectF(
-        centerX - squareSize,
-        centerY - squareSize,
-        centerX + squareSize,
-        centerY + squareSize
-    )
-    canvas.drawRoundRect(squareRect, 2 * density, 2 * density, fillPaint)
+    canvas.drawCircle(size / 2f, size / 2f, size / 4f, innerPaint)
 
     return BitmapDrawable(context.resources, bitmap)
 }
