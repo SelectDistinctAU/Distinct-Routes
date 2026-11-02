@@ -16,7 +16,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.content.ContextCompat
 import com.distinctroutes.app.R
 import org.osmdroid.config.Configuration
 import org.osmdroid.events.MapEventsReceiver
@@ -90,7 +89,7 @@ fun MapViewContainer(
             .fillMaxSize()
             .clipToBounds()
             .semantics {
-                contentDescription = "Interactive OpenStreetMap view showing Start, Destination, and optional Via Stop pins"
+                this.contentDescription = "Interactive OpenStreetMap view showing Start, Destination, and optional Via Stop pins"
             },
         update = { map ->
             try {

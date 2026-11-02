@@ -24,6 +24,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Accessible
@@ -42,7 +44,6 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Navigation
-import androidx.compose.material.icons.filled.PinDrop
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
@@ -85,8 +86,6 @@ import com.distinctroutes.app.R
 import com.distinctroutes.app.domain.model.BikeType
 import com.distinctroutes.app.domain.model.FavoriteRoute
 import com.distinctroutes.app.ui.favorites.FavoritesViewModel
-import com.distinctroutes.app.ui.theme.CardShape
-import com.distinctroutes.app.ui.theme.PillShape
 import kotlinx.coroutines.delay
 
 @Composable
@@ -211,11 +210,11 @@ fun RoutePlannerScreen(
                 .padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            if (isTopCardCollapsed && (uiState is RoutePlannerUiState.Success)) {
+            if (isTopCardCollapsed) {
                 // COLLAPSED COMPACT SUMMARY BAR (Maximizes Map View to 85%+)
                 Card(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)),
-                    shape = CardShape,
+                    shape = RoundedCornerShape(20.dp),
                     elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
                     modifier = Modifier
                         .fillMaxWidth()
@@ -240,7 +239,7 @@ fun RoutePlannerScreen(
                             Spacer(modifier = Modifier.width(10.dp))
                             Column {
                                 Text(
-                                    text = if (startAddress.isNotBlank() && endAddress.isNotBlank()) "${startAddress.take(16)} → ${endAddress.take(16)}" else "Calculated Route",
+                                    text = if (startAddress.isNotBlank() && endAddress.isNotBlank()) "${startAddress.take(16)} → ${endAddress.take(16)}" else "Long-press map to set Start / Destination",
                                     style = MaterialTheme.typography.titleSmall,
                                     fontWeight = FontWeight.Bold,
                                     maxLines = 1,
@@ -267,7 +266,7 @@ fun RoutePlannerScreen(
                 // COMPACT EXPANDED INPUT CONTROLS CARD
                 Card(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)),
-                    shape = CardShape,
+                    shape = RoundedCornerShape(20.dp),
                     elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
                     modifier = Modifier
                         .fillMaxWidth()
@@ -279,7 +278,7 @@ fun RoutePlannerScreen(
                             .verticalScroll(rememberScrollState()),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        // Header Logo Bar with Collapse Button
+                        // Header Logo Bar with Minimize Button
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
@@ -307,14 +306,12 @@ fun RoutePlannerScreen(
                                 }
                             }
 
-                            if (uiState is RoutePlannerUiState.Success) {
-                                IconButton(onClick = { isTopCardCollapsed = true }) {
-                                    Icon(
-                                        imageVector = Icons.Default.ExpandLess,
-                                        contentDescription = "Minimize inputs and expand map view",
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                }
+                            IconButton(onClick = { isTopCardCollapsed = true }) {
+                                Icon(
+                                    imageVector = Icons.Default.ExpandLess,
+                                    contentDescription = "Minimize inputs and expand map view",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
                             }
                         }
 
@@ -375,7 +372,7 @@ fun RoutePlannerScreen(
                             }
                         }
 
-                        // START Address Input with Search, Pin Drop, GPS
+                        // START Address Input with Search & GPS Target Icons
                         Box {
                             OutlinedTextField(
                                 value = startAddress,
@@ -393,15 +390,6 @@ fun RoutePlannerScreen(
                                             Icon(
                                                 imageVector = Icons.Default.Search,
                                                 contentDescription = "Search start address",
-                                                tint = MaterialTheme.colorScheme.primary
-                                            )
-                                        }
-                                        IconButton(
-                                            onClick = { isTopCardCollapsed = true }
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.PinDrop,
-                                                contentDescription = "Drop start pin on map",
                                                 tint = MaterialTheme.colorScheme.primary
                                             )
                                         }
@@ -522,7 +510,7 @@ fun RoutePlannerScreen(
                             )
                         }
 
-                        // DESTINATION Address Input with Search, Pin Drop, Swap
+                        // DESTINATION Address Input with Search & Swap Buttons
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically
@@ -537,25 +525,14 @@ fun RoutePlannerScreen(
                                     label = { Text("Destination Address or Place") },
                                     leadingIcon = { Icon(Icons.Default.Flag, contentDescription = "Destination Flag B icon") },
                                     trailingIcon = {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            IconButton(
-                                                onClick = { viewModel.searchAddress(endAddress, field = "end") }
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Search,
-                                                    contentDescription = "Search destination address",
-                                                    tint = MaterialTheme.colorScheme.primary
-                                                )
-                                            }
-                                            IconButton(
-                                                onClick = { isTopCardCollapsed = true }
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Default.PinDrop,
-                                                    contentDescription = "Drop destination pin on map",
-                                                    tint = MaterialTheme.colorScheme.primary
-                                                )
-                                            }
+                                        IconButton(
+                                            onClick = { viewModel.searchAddress(endAddress, field = "end") }
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Search,
+                                                contentDescription = "Search destination address",
+                                                tint = MaterialTheme.colorScheme.primary
+                                            )
                                         }
                                     },
                                     modifier = Modifier
@@ -592,7 +569,7 @@ fun RoutePlannerScreen(
                         // Explicit "Calculate Route Now" Button
                         Button(
                             onClick = { viewModel.calculateRoute() },
-                            shape = PillShape,
+                            shape = CircleShape,
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.primary,
                                 contentColor = MaterialTheme.colorScheme.onPrimary
@@ -785,36 +762,13 @@ fun RoutePlannerScreen(
                 .padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            if (uiState !is RoutePlannerUiState.Success) {
-                // Prominent M3 Expressive Pill-Shaped Calculate Route Button (shown before calculation)
-                Button(
-                    onClick = { viewModel.calculateRoute() },
-                    shape = PillShape,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
-                    ),
-                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp)
-                        .semantics { contentDescription = "Calculate safety-focused route button" }
-                ) {
-                    Text(
-                        text = stringResource(R.string.btn_calculate_route),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-
             // Result Card
             when (uiState) {
                 is RoutePlannerUiState.Idle -> {}
                 is RoutePlannerUiState.Loading -> {
                     Card(
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)),
-                        shape = CardShape,
+                        shape = RoundedCornerShape(20.dp),
                         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -829,7 +783,7 @@ fun RoutePlannerScreen(
                     val route = (uiState as RoutePlannerUiState.Success).route
                     Card(
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.95f)),
-                        shape = CardShape,
+                        shape = RoundedCornerShape(20.dp),
                         modifier = Modifier
                             .fillMaxWidth()
                             .semantics { contentDescription = "Route calculated successfully. Distance ${route.distanceKm} kilometers, duration ${route.durationMinutes} minutes." },
@@ -865,48 +819,11 @@ fun RoutePlannerScreen(
                                 )
                             }
 
-                            if (!route.requestUrl.isNullOrBlank()) {
-                                var showInspector by remember { mutableStateOf(false) }
-                                TextButton(
-                                    onClick = { showInspector = !showInspector },
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Icon(Icons.Default.Info, contentDescription = null, modifier = Modifier.size(16.dp))
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text(
-                                        text = if (showInspector) "Hide BBBike API Request URL" else "Inspect BBBike API Request URL 🔍",
-                                        style = MaterialTheme.typography.labelSmall
-                                    )
-                                }
-
-                                AnimatedVisibility(visible = showInspector) {
-                                    Card(
-                                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-                                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
-                                    ) {
-                                        Column(modifier = Modifier.padding(10.dp)) {
-                                            Text(
-                                                text = "Outgoing BBBike API v0.2 GET URL:",
-                                                style = MaterialTheme.typography.labelSmall,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                            Spacer(modifier = Modifier.height(4.dp))
-                                            Text(
-                                                text = route.requestUrl,
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = MaterialTheme.colorScheme.primary,
-                                                fontWeight = FontWeight.SemiBold
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-
                             Spacer(modifier = Modifier.height(8.dp))
 
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 Button(
                                     onClick = {
@@ -956,27 +873,7 @@ fun RoutePlannerScreen(
                                     Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(4.dp))
                                     Text(
-                                        text = "Share",
-                                        maxLines = 1,
-                                        style = MaterialTheme.typography.labelMedium
-                                    )
-                                }
-
-                                Button(
-                                    onClick = {
-                                        val navIntent = viewModel.getOsmAndHandoffIntent(route)
-                                        try {
-                                            context.startActivity(navIntent)
-                                        } catch (e: Exception) {
-                                            Toast.makeText(context, "Exported GPX file to cache.", Toast.LENGTH_LONG).show()
-                                        }
-                                    },
-                                    modifier = Modifier.weight(1.3f)
-                                ) {
-                                    Icon(Icons.Default.Navigation, contentDescription = null, modifier = Modifier.size(16.dp))
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text(
-                                        text = "Launch OsmAnd",
+                                        text = "Share GPX / Route",
                                         maxLines = 1,
                                         style = MaterialTheme.typography.labelMedium
                                     )
@@ -989,7 +886,7 @@ fun RoutePlannerScreen(
                     val errorMsg = (uiState as RoutePlannerUiState.Error).message
                     Card(
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
-                        shape = CardShape,
+                        shape = RoundedCornerShape(20.dp),
                         modifier = Modifier
                             .fillMaxWidth()
                             .semantics { contentDescription = "Error calculating route: $errorMsg" }
@@ -1015,7 +912,7 @@ fun RoutePlannerScreen(
         ) {
             Card(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
-                shape = PillShape,
+                shape = CircleShape,
                 elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
                 modifier = Modifier
                     .fillMaxWidth()
