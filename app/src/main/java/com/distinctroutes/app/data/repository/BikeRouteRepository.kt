@@ -98,7 +98,7 @@ class BikeRouteRepository @Inject constructor(
             val startWgs84 = "${request.startLon},${request.startLat}"
             val zielWgs84 = "${request.endLon},${request.endLat}"
             val viaWgs84 = if (request.viaWaypoints.isNotEmpty()) {
-                request.viaWaypoints.joinToString("|") { "${it.second},${it.first}" }
+                request.viaWaypoints.joinToString(";") { "${it.second},${it.first}" }
             } else null
 
             val prefCat = if (request.preferResidentialRoads.isNotBlank()) request.preferResidentialRoads else "N1"

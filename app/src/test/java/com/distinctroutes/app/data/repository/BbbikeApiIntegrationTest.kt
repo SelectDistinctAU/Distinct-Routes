@@ -44,4 +44,27 @@ class BbbikeApiIntegrationTest {
     fun `test live BBBike API for Berlin Germany`() {
         testBbbikeCityRoute("bbbike", "13.377846,52.516265", "13.404294,52.535019")
     }
+
+    @Test
+    fun `test live BBBike API Via Stop route for Perth`() {
+        val url = "https://api.bbbike.org/api/0.2/Perth/?appid=guest&startc_wgs84=115.90258,-32.00242&viac_wgs84=115.9000,-31.9800&zielc_wgs84=115.87861,-31.96202&pref_cat=N1&pref_speed=20&pref_seen=1&output_as=gpx-route"
+
+        val request = Request.Builder()
+            .url(url)
+            .header("User-Agent", "DistinctRoutes/0.1.0 (distinctroutes@pm.me; Android)")
+            .build()
+
+        try {
+            val response = client.newCall(request).execute()
+            if (response.isSuccessful && response.body != null) {
+                val rawText = response.body!!.string()
+                val ptRegex = Regex("""(?:<rtept|<trkpt)\s+lat=["']([^"']+)["']\s+lon=["']([^"']+)["']""")
+                val matches = ptRegex.findAll(rawText).toList()
+                println("Perth Via Stop Route: Extracted ${matches.size} waypoints from BBBike GPX")
+                assertTrue("Extracted waypoints for Perth Via Stop should be > 5, got ${matches.size}", matches.size > 5)
+            }
+        } catch (e: Exception) {
+            println("Live network integration test skipped: ${e.message}")
+        }
+    }
 }
