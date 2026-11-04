@@ -322,41 +322,55 @@ fun RoutePlannerScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.weight(1f)
+                            ) {
                                 Image(
                                     painter = painterResource(R.drawable.direct_route),
                                     contentDescription = "Distinct Routes logo",
-                                    modifier = Modifier.size(32.dp)
+                                    modifier = Modifier.size(30.dp)
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Column {
+                                Column(modifier = Modifier.weight(1f)) {
                                     Text(
                                         text = stringResource(R.string.app_name),
                                         style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.primary
+                                        color = MaterialTheme.colorScheme.primary,
+                                        maxLines = 1
                                     )
                                     Text(
-                                        text = "💡 Long-press map anytime to set Start / Destination",
+                                        text = "💡 Long-press map anytime to set points",
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
                                     )
                                 }
                             }
 
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                IconButton(onClick = { viewModel.clearAllInputs() }) {
+                                IconButton(
+                                    onClick = { viewModel.clearAllInputs() },
+                                    modifier = Modifier.size(36.dp)
+                                ) {
                                     Icon(
                                         imageVector = Icons.Default.Delete,
                                         contentDescription = "Clear all inputs",
-                                        tint = MaterialTheme.colorScheme.error
+                                        tint = MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.size(20.dp)
                                     )
                                 }
-                                IconButton(onClick = { isTopCardCollapsed = true }) {
+                                IconButton(
+                                    onClick = { isTopCardCollapsed = true },
+                                    modifier = Modifier.size(36.dp)
+                                ) {
                                     Icon(
                                         imageVector = Icons.Default.ExpandLess,
                                         contentDescription = "Minimize inputs and expand map view",
-                                        tint = MaterialTheme.colorScheme.primary
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(24.dp)
                                     )
                                 }
                             }
