@@ -74,6 +74,16 @@ class RoutePlannerViewModel @Inject constructor(
     val endSuggestions = MutableStateFlow<List<AddressLocation>>(emptyList())
     val viaSuggestions = MutableStateFlow<List<AddressLocation>>(emptyList())
 
+    fun isStartMinimized(): Boolean = preferencesStorage.getStartMinimized()
+
+    fun isOnboardingCompleted(): Boolean = preferencesStorage.isOnboardingCompleted()
+
+    fun completeOnboarding(city: String, bikeType: BikeType) {
+        preferencesStorage.saveDefaultCity(city)
+        updateSafetyPreferences(bikeType = bikeType)
+        preferencesStorage.saveOnboardingCompleted(true)
+    }
+
     fun togglePreferencesExpanded() {
         _isPreferencesExpanded.value = !_isPreferencesExpanded.value
     }

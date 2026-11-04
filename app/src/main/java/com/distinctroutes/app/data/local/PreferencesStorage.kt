@@ -22,7 +22,7 @@ class PreferencesStorage @Inject constructor(
     )
 
     fun getDefaultCity(): String {
-        return prefs.getString(Constants.KEY_SELECTED_CITY, "Berlin") ?: "Berlin"
+        return prefs.getString(Constants.KEY_SELECTED_CITY, "Perth") ?: "Perth"
     }
 
     fun saveDefaultCity(city: String) {
@@ -43,6 +43,22 @@ class PreferencesStorage @Inject constructor(
 
     fun saveColourMode(mode: String) {
         prefs.edit().putString("pref_colour_mode", mode).apply()
+    }
+
+    fun getStartMinimized(): Boolean {
+        return prefs.getBoolean("key_start_minimized", false)
+    }
+
+    fun saveStartMinimized(enabled: Boolean) {
+        prefs.edit().putBoolean("key_start_minimized", enabled).apply()
+    }
+
+    fun isOnboardingCompleted(): Boolean {
+        return prefs.getBoolean("key_onboarding_completed", false)
+    }
+
+    fun saveOnboardingCompleted(completed: Boolean) {
+        prefs.edit().putBoolean("key_onboarding_completed", completed).apply()
     }
 
     fun getSafetyPreferences(): SafetyPreferences {

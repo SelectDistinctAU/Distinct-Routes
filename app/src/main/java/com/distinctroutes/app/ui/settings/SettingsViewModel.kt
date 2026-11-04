@@ -32,6 +32,9 @@ class SettingsViewModel @Inject constructor(
     private val _colourMode = MutableStateFlow(preferencesStorage.getColourMode())
     val colourMode: StateFlow<String> = _colourMode.asStateFlow()
 
+    private val _startMinimized = MutableStateFlow(preferencesStorage.getStartMinimized())
+    val startMinimized: StateFlow<Boolean> = _startMinimized.asStateFlow()
+
     private val _availableCities = MutableStateFlow<List<String>>(
         listOf("Perth", "Berlin", "Canberra", "Sydney", "Melbourne", "Brisbane", "Adelaide", "London", "Paris", "Rome", "Madrid")
     )
@@ -66,6 +69,11 @@ class SettingsViewModel @Inject constructor(
     fun updateColourMode(mode: String) {
         _colourMode.value = mode
         preferencesStorage.saveColourMode(mode)
+    }
+
+    fun updateStartMinimized(enabled: Boolean) {
+        _startMinimized.value = enabled
+        preferencesStorage.saveStartMinimized(enabled)
     }
 
     fun updateSafetyPreferences(

@@ -306,6 +306,28 @@ fun SettingsScreen(
             }
         }
 
+        // Launch Display Mode Card
+        val startMinimized by viewModel.startMinimized.collectAsState()
+        Card(
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+            modifier = Modifier.fillMaxWidth(),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "Launch Display Mode",
+                    style = MaterialTheme.typography.titleSmall
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                SettingToggleRow(
+                    label = "Start Route Planner Card Minimized",
+                    checked = startMinimized,
+                    onCheckedChange = { viewModel.updateStartMinimized(it) },
+                    contentDescription = "Toggle launch route planner card minimized"
+                )
+            }
+        }
+
         // Default Safety & Riding Preferences Toggles Card
         Card(
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),

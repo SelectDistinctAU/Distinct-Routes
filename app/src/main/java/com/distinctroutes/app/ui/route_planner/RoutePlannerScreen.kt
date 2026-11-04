@@ -110,7 +110,8 @@ fun RoutePlannerScreen(
     var bikeTypeDropdownExpanded by remember { mutableStateOf(false) }
     var isBannerVisible by remember { mutableStateOf(true) }
     var showSavedSnackbar by remember { mutableStateOf(false) }
-    var isTopCardCollapsed by remember { mutableStateOf(false) }
+    var isTopCardCollapsed by remember { mutableStateOf(viewModel.isStartMinimized()) }
+    var showOnboardingDialog by remember { mutableStateOf(!viewModel.isOnboardingCompleted()) }
 
     var showLongPressMenu by remember { mutableStateOf(false) }
     var longPressLat by remember { mutableDoubleStateOf(0.0) }
@@ -151,6 +152,22 @@ fun RoutePlannerScreen(
     }
 
     Box(modifier = modifier.fillMaxSize()) {
+        if (showOnboardingDialog) {
+            com.distinctroutes.app.ui.onboarding.OnboardingDialog(
+                supportedCities = listOf("Perth", "Berlin", "Canberra", "Sydney", "Melbourne", "Brisbane", "Adelaide", "London", "Paris", "Rome", "Madrid"),
+                initialCity = viewModel.selectedCity,
+                initialBikeType = preferences.bikeType,
+                onCompleteOnboarding = { city, bikeType ->
+                    viewModel.completeOnboarding(city, bikeType)
+                    showOnboardingDialog = false
+                },
+                hasLocationPermission = viewModel.locationHelper.hasLocationPermission(),
+                onRequestLocationPermission = {
+                    permissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+                }
+            )
+        }
+
         // ==========================================
         // 100% FULL-SCREEN MAP CANVAS BACKGROUND
         // ==========================================
