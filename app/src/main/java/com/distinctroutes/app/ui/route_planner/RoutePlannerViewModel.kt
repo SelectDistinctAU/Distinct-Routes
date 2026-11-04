@@ -124,6 +124,23 @@ class RoutePlannerViewModel @Inject constructor(
         }
     }
 
+    fun clearAllInputs() {
+        startAddressText.value = ""
+        startLat = -31.9505
+        startLon = 115.8605
+
+        endAddressText.value = ""
+        endLat = -31.9505
+        endLon = 115.8605
+
+        viaStops.value = emptyList()
+        startSuggestions.value = emptyList()
+        endSuggestions.value = emptyList()
+        viaSuggestions.value = emptyList()
+
+        _uiState.value = RoutePlannerUiState.Idle
+    }
+
     fun updateSafetyPreferences(
         preferResidentialRoads: String = _preferences.value.preferResidentialRoads,
         useFerries: Boolean = _preferences.value.useFerries,

@@ -35,6 +35,7 @@ import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
@@ -63,7 +64,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -161,10 +161,10 @@ fun RoutePlannerScreen(
             endLon = viewModel.endLon,
             viaWaypoints = viaStops.map { Pair(it.lat, it.lon) },
             routePoints = (uiState as? RoutePlannerUiState.Success)?.route?.polylinePoints ?: emptyList(),
-            onStartPinMoved = { lat, lon -> viewModel.onStartPinMoved(lat, lon) },
-            onEndPinMoved = { lat, lon -> viewModel.onEndPinMoved(lat, lon) },
-            onViaPinMoved = { idx, lat, lon -> viewModel.onViaPinMoved(idx, lat, lon) },
-            onMapLongPress = { lat, lon ->
+            onStartPinMoved = { lat: Double, lon: Double -> viewModel.onStartPinMoved(lat, lon) },
+            onEndPinMoved = { lat: Double, lon: Double -> viewModel.onEndPinMoved(lat, lon) },
+            onViaPinMoved = { idx: Int, lat: Double, lon: Double -> viewModel.onViaPinMoved(idx, lat, lon) },
+            onMapLongPress = { lat: Double, lon: Double ->
                 longPressLat = lat
                 longPressLon = lon
                 showLongPressMenu = true
@@ -220,45 +220,83 @@ fun RoutePlannerScreen(
                         .fillMaxWidth()
                         .clickable { isTopCardCollapsed = false }
                 ) {
-                    Row(
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 14.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Row(
+                            modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.weight(1f)
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Image(
-                                painter = painterResource(R.drawable.direct_route),
-                                contentDescription = "Distinct Routes logo",
-                                modifier = Modifier.size(28.dp)
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column {
-                                Text(
-                                    text = if (startAddress.isNotBlank() && endAddress.isNotBlank()) "${startAddress.take(16)} → ${endAddress.take(16)}" else "Long-press map to set Start / Destination",
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Image(
+                                    painter = painterResource(R.drawable.direct_route),
+                                    contentDescription = "Distinct Routes logo",
+                                    modifier = Modifier.size(28.dp)
                                 )
-                                Text(
-                                    text = "${preferences.bikeType.displayName} • Tap to edit inputs",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    maxLines = 1
-                                )
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
+                                    Text(
+                                        text = if (startAddress.isNotBlank() && endAddress.isNotBlank()) "${startAddress.take(16)} → ${endAddress.take(16)}" else "Long-press map to set Start / Destination",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    Text(
+                                        text = "${preferences.bikeType.displayName} • Tap to edit inputs",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        maxLines = 1
+                                    )
+                                }
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                IconButton(onClick = { viewModel.clearAllInputs() }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Delete,
+                                        contentDescription = "Clear all route inputs and pins",
+                                        tint = MaterialTheme.colorScheme.error
+                                    )
+                                }
+                                IconButton(onClick = { isTopCardCollapsed = false }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Edit,
+                                        contentDescription = "Expand and edit route search inputs",
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
                             }
                         }
-                        IconButton(onClick = { isTopCardCollapsed = false }) {
-                            Icon(
-                                imageVector = Icons.Default.Edit,
-                                contentDescription = "Expand and edit route search inputs",
-                                tint = MaterialTheme.colorScheme.primary
-                            )
+
+                        // "Calculate Route Now" button directly on Minimized Banner if Start & Destination are set!
+                        if (startAddress.isNotBlank() && endAddress.isNotBlank() && uiState !is RoutePlannerUiState.Loading && uiState !is RoutePlannerUiState.Success) {
+                            Button(
+                                onClick = { viewModel.calculateRoute() },
+                                shape = CircleShape,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = MaterialTheme.colorScheme.onPrimary
+                                ),
+                                elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(44.dp)
+                            ) {
+                                Icon(Icons.Default.Navigation, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "Calculate Route Now ➔",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
                     }
                 }
@@ -278,7 +316,7 @@ fun RoutePlannerScreen(
                             .verticalScroll(rememberScrollState()),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        // Header Logo Bar with Minimize Button
+                        // Header Logo Bar with Clear All & Minimize Buttons
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
@@ -306,12 +344,21 @@ fun RoutePlannerScreen(
                                 }
                             }
 
-                            IconButton(onClick = { isTopCardCollapsed = true }) {
-                                Icon(
-                                    imageVector = Icons.Default.ExpandLess,
-                                    contentDescription = "Minimize inputs and expand map view",
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                IconButton(onClick = { viewModel.clearAllInputs() }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Delete,
+                                        contentDescription = "Clear all inputs",
+                                        tint = MaterialTheme.colorScheme.error
+                                    )
+                                }
+                                IconButton(onClick = { isTopCardCollapsed = true }) {
+                                    Icon(
+                                        imageVector = Icons.Default.ExpandLess,
+                                        contentDescription = "Minimize inputs and expand map view",
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
                             }
                         }
 
@@ -380,7 +427,7 @@ fun RoutePlannerScreen(
                                     viewModel.startAddressText.value = it
                                     viewModel.searchAddress(it, field = "start")
                                 },
-                                label = { Text("Start Address or Place") },
+                                label = { Text("Departure Point") },
                                 leadingIcon = { Icon(Icons.Default.LocationOn, contentDescription = "Start Flag A icon") },
                                 trailingIcon = {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -437,7 +484,7 @@ fun RoutePlannerScreen(
                                         stop.addressText = newAddr
                                         viewModel.searchAddress(newAddr, field = stop.id)
                                     },
-                                    label = { Text("Via Stop #${index + 1} Address") },
+                                    label = { Text("Detour Stop #${index + 1}") },
                                     leadingIcon = { Icon(Icons.Default.Place, contentDescription = "Yellow Via Stop Dot icon") },
                                     trailingIcon = {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -522,7 +569,7 @@ fun RoutePlannerScreen(
                                         viewModel.endAddressText.value = it
                                         viewModel.searchAddress(it, field = "end")
                                     },
-                                    label = { Text("Destination Address or Place") },
+                                    label = { Text("Destination Point") },
                                     leadingIcon = { Icon(Icons.Default.Flag, contentDescription = "Destination Flag B icon") },
                                     trailingIcon = {
                                         IconButton(

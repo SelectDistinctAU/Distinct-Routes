@@ -16,6 +16,13 @@
 -keep class org.osmdroid.** { *; }
 -dontwarn org.osmdroid.**
 
+# Distinct Routes UI Composables
+-keep class com.distinctroutes.app.ui.** { *; }
+-keepclassmembers class com.distinctroutes.app.ui.** { *; }
+-keepclassmembers class * {
+    @androidx.compose.runtime.Composable *;
+}
+
 # Hilt & Dagger
 -keep class dagger.hilt.** { *; }
 -keepclassmembers class * {

@@ -186,7 +186,7 @@ fun MapViewContainer(
     )
 }
 
-private fun createBbbikeStartPin(context: Context): Drawable {
+fun createBbbikeStartPin(context: Context): Drawable {
     val size = 96
     val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
     val canvas = Canvas(bitmap)
@@ -212,7 +212,7 @@ private fun createBbbikeStartPin(context: Context): Drawable {
     return BitmapDrawable(context.resources, bitmap)
 }
 
-private fun createBbbikeEndPin(context: Context): Drawable {
+fun createBbbikeEndPin(context: Context): Drawable {
     val size = 96
     val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
     val canvas = Canvas(bitmap)
@@ -238,7 +238,7 @@ private fun createBbbikeEndPin(context: Context): Drawable {
     return BitmapDrawable(context.resources, bitmap)
 }
 
-private fun createBbbikeViaPin(context: Context): Drawable {
+fun createBbbikeViaPin(context: Context): Drawable {
     val size = 48
     val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
     val canvas = Canvas(bitmap)

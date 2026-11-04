@@ -25,9 +25,19 @@ android {
         buildConfigField("String", "BUILD_TIME", "\"$currentFormattedDate\"")
     }
 
+    signingConfigs {
+        getByName("debug") {
+            val defaultKey = file("${System.getProperty("user.home")}/.android/debug.keystore")
+            if (defaultKey.exists()) {
+                storeFile = defaultKey
+            }
+        }
+    }
+
     buildTypes {
         release {
-            isMinifyEnabled = true
+            isMinifyEnabled = false
+            isShrinkResources = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

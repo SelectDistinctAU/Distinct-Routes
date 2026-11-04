@@ -13,7 +13,7 @@
     <string name="msg_gps_denied">Location permission denied; manual address entry required.</string>
     <string name="cd_start_pin">Start Location (Flag A)</string>
     <string name="cd_end_pin">Destination Location (Flag B)</string>
-    <string name="btn_add_via_stop">Add Stop Along the Way (Via)</string>
+    <string name="btn_add_via_stop">Add Detour Stop</string>
     <string name="btn_remove_via_stop">Remove Stop</string>
     <string name="title_via_stop">Via (Stop along the way)</string>
     <string name="cd_via_pin">Via Stop (Yellow Dot ●)</string>
