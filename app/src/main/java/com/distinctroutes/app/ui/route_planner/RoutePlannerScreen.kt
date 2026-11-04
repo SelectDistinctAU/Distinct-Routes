@@ -178,21 +178,21 @@ fun RoutePlannerScreen(
             onDismissRequest = { showLongPressMenu = false }
         ) {
             DropdownMenuItem(
-                text = { Text("▶ Set as Start Location") },
+                text = { Text("▶ Set Departure") },
                 onClick = {
                     viewModel.setStartFromMap(longPressLat, longPressLon)
                     showLongPressMenu = false
                 }
             )
             DropdownMenuItem(
-                text = { Text("● Add as Via Stop") },
+                text = { Text("● Add Detour (${viaStops.size + 1})") },
                 onClick = {
                     viewModel.addViaFromMap(longPressLat, longPressLon)
                     showLongPressMenu = false
                 }
             )
             DropdownMenuItem(
-                text = { Text("■ Set as Destination") },
+                text = { Text("■ Set Destination") },
                 onClick = {
                     viewModel.setEndFromMap(longPressLat, longPressLon)
                     showLongPressMenu = false
