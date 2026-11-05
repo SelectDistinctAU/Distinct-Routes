@@ -17,12 +17,16 @@ android {
         applicationId = "com.distinctroutes.app"
         minSdk = 24
         targetSdk = 36
-        versionCode = 9
-        versionName = "0.2.0-alpha.9"
+        versionCode = 10
+        versionName = "0.2.0-alpha.10"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         val currentFormattedDate = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.US).format(Date())
         buildConfigField("String", "BUILD_TIME", "\"$currentFormattedDate\"")
+
+        ndk {
+            debugSymbolLevel = "FULL"
+        }
     }
 
     signingConfigs {
