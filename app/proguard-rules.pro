@@ -6,6 +6,7 @@
 }
 -keep class com.distinctroutes.app.data.model.** { *; }
 -keep class com.distinctroutes.app.domain.model.** { *; }
+-keep class com.distinctroutes.app.data.local.db.** { *; }
 
 # Retrofit
 -keepattributes Signature, InnerClasses, EnclosingMethod
