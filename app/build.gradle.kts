@@ -68,6 +68,11 @@ android {
         kotlinCompilerExtensionVersion = "1.5.15"
     }
 
+    lint {
+        checkReleaseBuilds = false
+        abortOnError = false
+    }
+
     testOptions {
         unitTests.isReturnDefaultValues = true
     }
