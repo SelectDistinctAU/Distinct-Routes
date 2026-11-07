@@ -42,10 +42,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.distinctroutes.app.R
 import com.distinctroutes.app.domain.model.FavoriteRoute
 import com.distinctroutes.app.ui.route_planner.RoutePlannerViewModel
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun FavoritesScreen(
@@ -193,12 +197,33 @@ fun FavoriteRouteCard(
     onDelete: () -> Unit,
     onLoadPlanner: () -> Unit
 ) {
+    val formattedDate = remember(route.savedTimestamp) {
+        if (route.savedTimestamp > 0) {
+            SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.US).format(Date(route.savedTimestamp))
+        } else {
+            SimpleDateFormat("dd MMM yyyy", Locale.US).format(Date())
+        }
+    }
+
+    val displayTitle = remember(route.startAddress, route.endAddress, route.title, formattedDate) {
+        val isGenericStart = route.startAddress.isBlank() || route.startAddress.startsWith("Map Pin") || route.startAddress.startsWith("Departure Point")
+        val isGenericEnd = route.endAddress.isBlank() || route.endAddress.startsWith("Map Pin") || route.endAddress.startsWith("Destination Point")
+
+        if (isGenericStart || isGenericEnd) {
+            "Ride on $formattedDate"
+        } else {
+            val startShort = route.startAddress.split(",").first().trim()
+            val endShort = route.endAddress.split(",").first().trim()
+            "$startShort → $endShort"
+        }
+    }
+
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
         modifier = Modifier
             .fillMaxWidth()
             .semantics {
-                contentDescription = "Route ${route.title}, distance ${route.distanceKm} km, duration ${route.durationMinutes} minutes."
+                contentDescription = "Route $displayTitle, distance ${route.distanceKm} km, duration ${route.durationMinutes} minutes."
             },
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -208,12 +233,23 @@ fun FavoriteRouteCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = route.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(1f)
-                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = displayTitle,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    if (isJournalMode) {
+                        Text(
+                            text = formattedDate,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
                 if (!isJournalMode) {
                     IconButton(onClick = onDelete) {
                         Icon(
@@ -225,21 +261,46 @@ fun FavoriteRouteCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(4.dp))
-            Text("From: ${route.startAddress}", style = MaterialTheme.typography.bodyMedium)
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = "From: ${route.startAddress}",
+                style = MaterialTheme.typography.bodySmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
             if (route.hasViaPoint && !route.viaAddress.isNullOrEmpty()) {
-                Text("Via: ${route.viaAddress}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                Text(
+                    text = "Via: ${route.viaAddress}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
-            Text("To: ${route.endAddress}", style = MaterialTheme.typography.bodyMedium)
+            Text(
+                text = "To: ${route.endAddress}",
+                style = MaterialTheme.typography.bodySmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
 
             Spacer(modifier = Modifier.height(8.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Distance: ${"%.2f".format(route.distanceKm)} km", style = MaterialTheme.typography.bodySmall)
-                Text("Est: ${route.durationMinutes} mins", style = MaterialTheme.typography.bodySmall)
-                Text("Profile: ${route.bikeTypeDisplayName}", style = MaterialTheme.typography.bodySmall)
+                Text(
+                    text = "${"%.2f".format(route.distanceKm)} km • ${route.durationMinutes} mins",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = route.bikeTypeDisplayName,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Medium
+                )
             }
 
             Spacer(modifier = Modifier.height(12.dp))

@@ -108,7 +108,7 @@ class BikeRouteRepository @Inject constructor(
             val prefGreen = if (request.preferGreenRoutes) "GR1" else null
 
             // Construct full request URL string for Logcat and UI Inspector
-            val fullUrl = "https://api.bbbike.org/api/0.2/${city}/?appid=guest&startc_wgs84=${startWgs84}&zielc_wgs84=${zielWgs84}&pref_cat=${prefCat}&pref_speed=${request.preferredSpeedKmH}&pref_seen=1&output_as=gpx-route"
+            val fullUrl = "https://api.bbbike.org/api/0.2/${city}/?appid=guest&startc_wgs84=${startWgs84}&zielc_wgs84=${zielWgs84}&pref_cat=${prefCat}&pref_speed=${request.preferredSpeedKmH}&pref_seen=1&output_as=gpx-track"
             android.util.Log.i("DistinctRoutes", "BBBike API Request URL: $fullUrl")
 
             var response = apiService.calculateBbbikeRoute(
@@ -125,7 +125,7 @@ class BikeRouteRepository @Inject constructor(
                 prefUnlit = prefUnlit,
                 prefAmpel = prefAmpel,
                 prefFerry = prefFerry,
-                outputAs = "gpx-route"
+                outputAs = "gpx-track"
             )
 
             if (!response.isSuccessful || response.body() == null) {
