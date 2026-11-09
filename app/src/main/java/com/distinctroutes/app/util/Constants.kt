@@ -33,12 +33,12 @@ object Constants {
     /**
      * App version name (semantic versioning).
      */
-    const val VERSION_NAME = "0.2.0-alpha.10"
+    const val VERSION_NAME = "0.2.0-alpha.11"
 
     /**
      * App version code (incremental integer for Play Store / F-Droid).
      */
-    const val VERSION_CODE = 10
+    const val VERSION_CODE = 11
 
     /**
      * Launch-supported locales.
