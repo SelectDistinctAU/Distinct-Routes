@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.distinctroutes.app.data.local.JournalStorage
 import com.distinctroutes.app.data.local.PreferencesStorage
 import com.distinctroutes.app.data.repository.BikeRouteRepository
+import com.distinctroutes.app.data.repository.SavedPlacesRepository
 import com.distinctroutes.app.domain.model.BikeType
 import com.distinctroutes.app.domain.model.FavoriteRoute
 import com.distinctroutes.app.domain.model.Route
@@ -45,8 +46,34 @@ class RoutePlannerViewModel @Inject constructor(
     val locationHelper: LocationHelper,
     private val exportToGPXUseCase: ExportToGPXUseCase,
     private val preferencesStorage: PreferencesStorage,
-    private val journalStorage: JournalStorage
+    private val journalStorage: JournalStorage,
+    private val savedPlacesRepository: SavedPlacesRepository
 ) : ViewModel() {
+
+    private val _savedPlaces = MutableStateFlow<List<com.distinctroutes.app.data.local.db.SavedPlaceEntity>>(emptyList())
+    val savedPlaces: StateFlow<List<com.distinctroutes.app.data.local.db.SavedPlaceEntity>> = _savedPlaces.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            savedPlacesRepository.getSavedPlacesFlow().collect { list ->
+                _savedPlaces.value = list
+            }
+        }
+    }
+
+    fun savePlace(label: String, iconType: String, address: String, lat: Double, lon: Double) {
+        viewModelScope.launch {
+            val entity = com.distinctroutes.app.data.local.db.SavedPlaceEntity(
+                id = UUID.randomUUID().toString(),
+                label = label,
+                iconType = iconType,
+                addressText = address,
+                latitude = lat,
+                longitude = lon
+            )
+            savedPlacesRepository.savePlace(entity)
+        }
+    }
 
     private val _uiState = MutableStateFlow<RoutePlannerUiState>(RoutePlannerUiState.Idle)
     val uiState: StateFlow<RoutePlannerUiState> = _uiState.asStateFlow()
@@ -73,6 +100,17 @@ class RoutePlannerViewModel @Inject constructor(
     val startSuggestions = MutableStateFlow<List<AddressLocation>>(emptyList())
     val endSuggestions = MutableStateFlow<List<AddressLocation>>(emptyList())
     val viaSuggestions = MutableStateFlow<List<AddressLocation>>(emptyList())
+
+    val longPressLocationName = MutableStateFlow("")
+
+    fun fetchLongPressLocation(lat: Double, lon: Double) {
+        longPressLocationName.value = "Resolving place..."
+        viewModelScope.launch {
+            geocodingUseCase.reverseGeocode(lat, lon).onSuccess { address ->
+                longPressLocationName.value = address
+            }
+        }
+    }
 
     fun isStartMinimized(): Boolean = preferencesStorage.getStartMinimized()
 

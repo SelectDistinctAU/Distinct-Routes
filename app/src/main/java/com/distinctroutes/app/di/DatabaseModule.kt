@@ -33,4 +33,10 @@ object DatabaseModule {
     fun provideFavoriteRouteDao(database: AppDatabase): FavoriteRouteDao {
         return database.favoriteRouteDao()
     }
+
+    @Provides
+    @Singleton
+    fun provideSavedPlaceDao(database: AppDatabase): com.distinctroutes.app.data.local.db.SavedPlaceDao {
+        return database.savedPlaceDao()
+    }
 }

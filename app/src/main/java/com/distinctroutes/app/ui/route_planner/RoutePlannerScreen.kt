@@ -34,6 +34,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -41,6 +42,7 @@ import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MyLocation
@@ -49,6 +51,8 @@ import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.SwapVert
+import androidx.compose.material.icons.filled.Work
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -56,6 +60,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -64,6 +69,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -86,6 +92,8 @@ import com.distinctroutes.app.R
 import com.distinctroutes.app.domain.model.BikeType
 import com.distinctroutes.app.domain.model.FavoriteRoute
 import com.distinctroutes.app.ui.favorites.FavoritesViewModel
+import com.distinctroutes.app.ui.theme.CardShape
+import com.distinctroutes.app.ui.theme.PillShape
 import kotlinx.coroutines.delay
 
 @Composable
@@ -117,6 +125,14 @@ fun RoutePlannerScreen(
     var longPressLat by remember { mutableDoubleStateOf(0.0) }
     var longPressLon by remember { mutableDoubleStateOf(0.0) }
 
+    var showSavePlaceDialog by remember { mutableStateOf(false) }
+    var savePlaceTargetAddress by remember { mutableStateOf("") }
+    var savePlaceTargetLat by remember { mutableDoubleStateOf(0.0) }
+    var savePlaceTargetLon by remember { mutableDoubleStateOf(0.0) }
+
+    val savedPlaces by viewModel.savedPlaces.collectAsState()
+    val longPressLocationName by viewModel.longPressLocationName.collectAsState()
+
     // Auto-collapse search inputs card when route calculation succeeds
     LaunchedEffect(uiState) {
         if (uiState is RoutePlannerUiState.Success) {
@@ -138,7 +154,6 @@ fun RoutePlannerScreen(
         }
     }
 
-    // Show disclaimer automatically while calculating/loading route or if manually toggled
     val showBanner = isBannerVisible || (uiState is RoutePlannerUiState.Loading)
 
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -184,16 +199,32 @@ fun RoutePlannerScreen(
             onMapLongPress = { lat: Double, lon: Double ->
                 longPressLat = lat
                 longPressLon = lon
+                viewModel.fetchLongPressLocation(lat, lon)
                 showLongPressMenu = true
             },
             modifier = Modifier.fillMaxSize()
         )
 
-        // Map Long-Press Contextual Menu
+        // Map Long-Press Contextual Menu with Resolved Location Name
         DropdownMenu(
             expanded = showLongPressMenu,
             onDismissRequest = { showLongPressMenu = false }
         ) {
+            if (longPressLocationName.isNotBlank()) {
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = "📍 $longPressLocationName",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    },
+                    onClick = {}
+                )
+            }
             DropdownMenuItem(
                 text = { Text("▶ Set Departure") },
                 onClick = {
@@ -228,7 +259,7 @@ fun RoutePlannerScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             if (isTopCardCollapsed) {
-                // COLLAPSED COMPACT SUMMARY BAR (Maximizes Map View to 85%+)
+                // COLLAPSED COMPACT SUMMARY BAR (Maximizes Map View to 90%+)
                 Card(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)),
                     shape = RoundedCornerShape(20.dp),
@@ -325,7 +356,7 @@ fun RoutePlannerScreen(
                     elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(max = 420.dp)
+                        .heightIn(max = 440.dp)
                 ) {
                     Column(
                         modifier = Modifier
@@ -450,7 +481,7 @@ fun RoutePlannerScreen(
                             }
                         }
 
-                        // START Address Input with Search & GPS Target Icons
+                        // START Address Input with Search, Bookmark, GPS Icons
                         Box {
                             OutlinedTextField(
                                 value = startAddress,
@@ -470,6 +501,22 @@ fun RoutePlannerScreen(
                                                 contentDescription = "Search start address",
                                                 tint = MaterialTheme.colorScheme.primary
                                             )
+                                        }
+                                        if (startAddress.isNotBlank()) {
+                                            IconButton(
+                                                onClick = {
+                                                    savePlaceTargetAddress = startAddress
+                                                    savePlaceTargetLat = viewModel.startLat
+                                                    savePlaceTargetLon = viewModel.startLon
+                                                    showSavePlaceDialog = true
+                                                }
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Bookmark,
+                                                    contentDescription = "Save Departure as a Saved Place",
+                                                    tint = MaterialTheme.colorScheme.primary
+                                                )
+                                            }
                                         }
                                         IconButton(
                                             onClick = {
@@ -501,6 +548,39 @@ fun RoutePlannerScreen(
                                     DropdownMenuItem(
                                         text = { Text(location.displayName) },
                                         onClick = { viewModel.selectAddressSuggestion(location, field = "start") }
+                                    )
+                                }
+                            }
+                        }
+
+                        // Quick-Access Saved Places Chips under Departure Point
+                        if (savedPlaces.isNotEmpty()) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 2.dp),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                savedPlaces.take(4).forEach { place ->
+                                    FilterChip(
+                                        selected = false,
+                                        onClick = {
+                                            viewModel.startAddressText.value = place.addressText
+                                            viewModel.startLat = place.latitude
+                                            viewModel.startLon = place.longitude
+                                        },
+                                        label = { Text(place.label, style = MaterialTheme.typography.labelSmall) },
+                                        leadingIcon = {
+                                            Icon(
+                                                imageVector = when (place.iconType) {
+                                                    "HOME" -> Icons.Default.Home
+                                                    "WORK" -> Icons.Default.Work
+                                                    else -> Icons.Default.Place
+                                                },
+                                                contentDescription = null,
+                                                modifier = Modifier.size(14.dp)
+                                            )
+                                        }
                                     )
                                 }
                             }
@@ -583,12 +663,12 @@ fun RoutePlannerScreen(
                             Icon(Icons.Default.Add, contentDescription = null)
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = if (viaStops.isEmpty()) stringResource(R.string.btn_add_via_stop) else "Add Another Stop (Trail/Loop)",
+                                text = if (viaStops.isEmpty()) stringResource(R.string.btn_add_via_stop) else "Add Another Detour Stop (Trail/Loop)",
                                 style = MaterialTheme.typography.titleSmall
                             )
                         }
 
-                        // DESTINATION Address Input with Search & Swap Buttons
+                        // DESTINATION Address Input with Search, Bookmark, Swap Buttons
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically
@@ -603,14 +683,32 @@ fun RoutePlannerScreen(
                                     label = { Text("Destination Point") },
                                     leadingIcon = { Icon(Icons.Default.Flag, contentDescription = "Destination Flag B icon") },
                                     trailingIcon = {
-                                        IconButton(
-                                            onClick = { viewModel.searchAddress(endAddress, field = "end") }
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.Search,
-                                                contentDescription = "Search destination address",
-                                                tint = MaterialTheme.colorScheme.primary
-                                            )
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            IconButton(
+                                                onClick = { viewModel.searchAddress(endAddress, field = "end") }
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Search,
+                                                    contentDescription = "Search destination address",
+                                                    tint = MaterialTheme.colorScheme.primary
+                                                )
+                                            }
+                                            if (endAddress.isNotBlank()) {
+                                                IconButton(
+                                                    onClick = {
+                                                        savePlaceTargetAddress = endAddress
+                                                        savePlaceTargetLat = viewModel.endLat
+                                                        savePlaceTargetLon = viewModel.endLon
+                                                        showSavePlaceDialog = true
+                                                    }
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.Bookmark,
+                                                        contentDescription = "Save Destination as a Saved Place",
+                                                        tint = MaterialTheme.colorScheme.primary
+                                                    )
+                                                }
+                                            }
                                         }
                                     },
                                     modifier = Modifier
@@ -901,7 +999,7 @@ fun RoutePlannerScreen(
 
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
                                 Button(
                                     onClick = {
@@ -979,6 +1077,21 @@ fun RoutePlannerScreen(
             }
         }
 
+        // Save Place Dialog Modal
+        if (showSavePlaceDialog) {
+            SavePlaceDialog(
+                initialAddress = savePlaceTargetAddress,
+                initialLat = savePlaceTargetLat,
+                initialLon = savePlaceTargetLon,
+                onDismiss = { showSavePlaceDialog = false },
+                onSave = { label, iconType, address, lat, lon ->
+                    viewModel.savePlace(label, iconType, address, lat, lon)
+                    showSavePlaceDialog = false
+                    Toast.makeText(context, "Saved '$label' to your device!", Toast.LENGTH_SHORT).show()
+                }
+            )
+        }
+
         // Floating Material 3 Pill Snackbar Overlay
         AnimatedVisibility(
             visible = showSavedSnackbar,
@@ -1017,6 +1130,79 @@ fun RoutePlannerScreen(
             }
         }
     }
+}
+
+@Composable
+fun SavePlaceDialog(
+    initialAddress: String,
+    initialLat: Double,
+    initialLon: Double,
+    onDismiss: () -> Unit,
+    onSave: (label: String, iconType: String, address: String, lat: Double, lon: Double) -> Unit
+) {
+    var label by remember { mutableStateOf("") }
+    var iconType by remember { mutableStateOf("HOME") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Save Place on Device", fontWeight = FontWeight.Bold) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    text = "Address: $initialAddress",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                OutlinedTextField(
+                    value = label,
+                    onValueChange = { label = it },
+                    label = { Text("Place Name (e.g. Home, Work, Bike Shop)") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Text("Select Icon:", style = MaterialTheme.typography.labelSmall)
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    FilterChip(
+                        selected = iconType == "HOME",
+                        onClick = { iconType = "HOME" },
+                        label = { Text("Home") },
+                        leadingIcon = { Icon(Icons.Default.Home, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                    )
+                    FilterChip(
+                        selected = iconType == "WORK",
+                        onClick = { iconType = "WORK" },
+                        label = { Text("Work") },
+                        leadingIcon = { Icon(Icons.Default.Work, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                    )
+                    FilterChip(
+                        selected = iconType == "BIKE_SHOP",
+                        onClick = { iconType = "BIKE_SHOP" },
+                        label = { Text("Bike Shop") },
+                        leadingIcon = { Icon(Icons.Default.Place, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (label.isNotBlank()) {
+                        onSave(label, iconType, initialAddress, initialLat, initialLon)
+                    }
+                },
+                enabled = label.isNotBlank()
+            ) {
+                Text("Save Place")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }
 
 @Composable

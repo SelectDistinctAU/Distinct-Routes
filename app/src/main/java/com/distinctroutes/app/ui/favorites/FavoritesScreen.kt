@@ -18,7 +18,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Map
+import androidx.compose.material.icons.filled.Place
+import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -32,7 +35,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -45,6 +48,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.distinctroutes.app.R
+import com.distinctroutes.app.data.local.db.SavedPlaceEntity
 import com.distinctroutes.app.domain.model.FavoriteRoute
 import com.distinctroutes.app.ui.route_planner.RoutePlannerViewModel
 import java.text.SimpleDateFormat
@@ -60,7 +64,8 @@ fun FavoritesScreen(
 ) {
     val favorites by viewModel.favorites.collectAsState()
     val journalHistory by viewModel.journalHistory.collectAsState()
-    var selectedTab by remember { mutableStateOf(0) } // 0 = Favourites, 1 = Journal History
+    val savedPlaces by viewModel.savedPlaces.collectAsState()
+    var selectedTab by remember { mutableIntStateOf(0) } // 0 = Favourites, 1 = Saved Places, 2 = Ride Journal
 
     LaunchedEffect(Unit) {
         viewModel.loadData()
@@ -93,98 +98,212 @@ fun FavoritesScreen(
                     color = MaterialTheme.colorScheme.primary
                 )
                 Text(
-                    text = if (selectedTab == 0) stringResource(R.string.title_favourites) else "Ride Journal History",
+                    text = when (selectedTab) {
+                        0 -> stringResource(R.string.title_favourites)
+                        1 -> "Saved Places (${savedPlaces.size})"
+                        else -> "Ride Journal History"
+                    },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
 
-        // Dual Tab Filter Chips: Favourites vs Ride Journal History
+        // Tri-Tab Filter Chips: Favourites vs Saved Places vs Ride Journal History
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             FilterChip(
                 selected = selectedTab == 0,
                 onClick = { selectedTab = 0 },
                 label = { Text(stringResource(R.string.title_favourites)) },
-                leadingIcon = { Icon(Icons.Default.Favorite, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                leadingIcon = { Icon(Icons.Default.Favorite, contentDescription = null, modifier = Modifier.size(16.dp)) }
             )
             FilterChip(
                 selected = selectedTab == 1,
                 onClick = { selectedTab = 1 },
-                label = { Text("Ride Journal (${journalHistory.size})") },
-                leadingIcon = { Icon(Icons.Default.History, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                label = { Text("Places (${savedPlaces.size})") },
+                leadingIcon = { Icon(Icons.Default.Place, contentDescription = null, modifier = Modifier.size(16.dp)) }
+            )
+            FilterChip(
+                selected = selectedTab == 2,
+                onClick = { selectedTab = 2 },
+                label = { Text("Journal (${journalHistory.size})") },
+                leadingIcon = { Icon(Icons.Default.History, contentDescription = null, modifier = Modifier.size(16.dp)) }
             )
         }
 
-        val activeList = if (selectedTab == 0) favorites else journalHistory
-
-        if (activeList.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .semantics {
-                        contentDescription = if (selectedTab == 0) "No saved favourite routes yet" else "No ride history yet"
-                    },
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = if (selectedTab == 0) stringResource(R.string.msg_no_favorites) else "No ride journal history yet. Calculated routes will automatically be logged here on-device.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(32.dp)
-                )
-            }
-        } else {
-            Column(modifier = Modifier.fillMaxSize()) {
-                if (selectedTab == 1) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End
+        when (selectedTab) {
+            1 -> {
+                // SAVED PLACES TAB
+                if (savedPlaces.isEmpty()) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(
+                            text = "No saved places yet. Save Home, Work, or favorite riding spots in Route Planner.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(32.dp)
+                        )
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        TextButton(onClick = { viewModel.clearJournalHistory() }) {
-                            Icon(Icons.Default.Delete, contentDescription = "Clear ride journal history")
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Clear Journal")
+                        items(savedPlaces, key = { it.id }) { place ->
+                            SavedPlaceCard(
+                                place = place,
+                                onDelete = { viewModel.deleteSavedPlace(place.id) },
+                                onLoadPlanner = {
+                                    routePlannerViewModel.startAddressText.value = place.addressText
+                                    routePlannerViewModel.startLat = place.latitude
+                                    routePlannerViewModel.startLon = place.longitude
+                                    onNavigateToPlanner()
+                                }
+                            )
                         }
                     }
                 }
+            }
 
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(activeList, key = { it.id }) { route ->
-                        FavoriteRouteCard(
-                            route = route,
-                            isJournalMode = selectedTab == 1,
-                            onDelete = {
-                                if (selectedTab == 0) viewModel.removeFavorite(route.id)
+            else -> {
+                // FAVOURITES (0) OR RIDE JOURNAL (2) TAB
+                val activeList = if (selectedTab == 0) favorites else journalHistory
+
+                if (activeList.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .semantics {
+                                contentDescription = if (selectedTab == 0) "No saved favourite routes yet" else "No ride history yet"
                             },
-                            onLoadPlanner = {
-                                routePlannerViewModel.startAddressText.value = route.startAddress
-                                routePlannerViewModel.startLat = route.startLat
-                                routePlannerViewModel.startLon = route.startLon
-                                routePlannerViewModel.endAddressText.value = route.endAddress
-                                routePlannerViewModel.endLat = route.endLat
-                                routePlannerViewModel.endLon = route.endLon
-
-                                if (route.hasViaPoint && route.viaLat != null && route.viaLon != null) {
-                                    routePlannerViewModel.addViaStop(
-                                        address = route.viaAddress ?: "",
-                                        lat = route.viaLat,
-                                        lon = route.viaLon
-                                    )
-                                }
-
-                                routePlannerViewModel.calculateRoute()
-                                onNavigateToPlanner()
-                            }
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = if (selectedTab == 0) stringResource(R.string.msg_no_favorites) else "No ride journal history yet. Calculated routes will automatically be logged here on-device.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(32.dp)
                         )
                     }
+                } else {
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        if (selectedTab == 2) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.End
+                            ) {
+                                TextButton(onClick = { viewModel.clearJournalHistory() }) {
+                                    Icon(Icons.Default.Delete, contentDescription = "Clear ride journal history")
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Clear Journal")
+                                }
+                            }
+                        }
+
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            items(activeList, key = { it.id }) { route ->
+                                FavoriteRouteCard(
+                                    route = route,
+                                    isJournalMode = selectedTab == 2,
+                                    onDelete = {
+                                        if (selectedTab == 0) viewModel.removeFavorite(route.id)
+                                    },
+                                    onLoadPlanner = {
+                                        routePlannerViewModel.startAddressText.value = route.startAddress
+                                        routePlannerViewModel.startLat = route.startLat
+                                        routePlannerViewModel.startLon = route.startLon
+                                        routePlannerViewModel.endAddressText.value = route.endAddress
+                                        routePlannerViewModel.endLat = route.endLat
+                                        routePlannerViewModel.endLon = route.endLon
+
+                                        if (route.hasViaPoint && route.viaLat != null && route.viaLon != null) {
+                                            routePlannerViewModel.addViaStop(
+                                                address = route.viaAddress ?: "",
+                                                lat = route.viaLat,
+                                                lon = route.viaLon
+                                            )
+                                        }
+
+                                        routePlannerViewModel.calculateRoute()
+                                        onNavigateToPlanner()
+                                    }
+                                )
+                            }
+                        }
+                    }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun SavedPlaceCard(
+    place: SavedPlaceEntity,
+    onDelete: () -> Unit,
+    onLoadPlanner: () -> Unit
+) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                    Icon(
+                        imageVector = when (place.iconType) {
+                            "HOME" -> Icons.Default.Home
+                            "WORK" -> Icons.Default.Work
+                            else -> Icons.Default.Place
+                        },
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = place.label,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                IconButton(onClick = onDelete) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Remove saved place",
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = place.addressText,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+            Button(
+                onClick = onLoadPlanner,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(Icons.Default.Map, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Set as Departure in Route Planner")
             }
         }
     }

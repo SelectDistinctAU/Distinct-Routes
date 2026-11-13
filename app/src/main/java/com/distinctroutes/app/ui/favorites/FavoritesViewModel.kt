@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.distinctroutes.app.data.local.FavoritesStorage
 import com.distinctroutes.app.data.local.JournalStorage
+import com.distinctroutes.app.data.local.db.SavedPlaceEntity
+import com.distinctroutes.app.data.repository.SavedPlacesRepository
 import com.distinctroutes.app.domain.model.FavoriteRoute
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,12 +15,13 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
- * ViewModel for managing saved favorite routes and on-device ride journal history.
+ * ViewModel for managing saved favorite routes, saved places, and on-device ride journal history.
  */
 @HiltViewModel
 class FavoritesViewModel @Inject constructor(
     private val favoritesStorage: FavoritesStorage,
-    private val journalStorage: JournalStorage
+    private val journalStorage: JournalStorage,
+    private val savedPlacesRepository: SavedPlacesRepository
 ) : ViewModel() {
 
     private val _favorites = MutableStateFlow<List<FavoriteRoute>>(emptyList())
@@ -26,6 +29,9 @@ class FavoritesViewModel @Inject constructor(
 
     private val _journalHistory = MutableStateFlow<List<FavoriteRoute>>(emptyList())
     val journalHistory: StateFlow<List<FavoriteRoute>> = _journalHistory.asStateFlow()
+
+    private val _savedPlaces = MutableStateFlow<List<SavedPlaceEntity>>(emptyList())
+    val savedPlaces: StateFlow<List<SavedPlaceEntity>> = _savedPlaces.asStateFlow()
 
     init {
         loadData()
@@ -35,6 +41,9 @@ class FavoritesViewModel @Inject constructor(
         viewModelScope.launch {
             _favorites.value = favoritesStorage.getFavorites()
             _journalHistory.value = journalStorage.getJournalHistory()
+            savedPlacesRepository.getSavedPlacesFlow().collect { list ->
+                _savedPlaces.value = list
+            }
         }
     }
 
@@ -56,6 +65,12 @@ class FavoritesViewModel @Inject constructor(
         viewModelScope.launch {
             favoritesStorage.removeFavorite(routeId)
             _favorites.value = favoritesStorage.getFavorites()
+        }
+    }
+
+    fun deleteSavedPlace(id: String) {
+        viewModelScope.launch {
+            savedPlacesRepository.deletePlace(id)
         }
     }
 
