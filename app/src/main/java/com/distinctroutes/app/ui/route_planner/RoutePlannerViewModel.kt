@@ -88,12 +88,12 @@ class RoutePlannerViewModel @Inject constructor(
     val isPreferencesExpanded: StateFlow<Boolean> = _isPreferencesExpanded.asStateFlow()
 
     var startAddressText = MutableStateFlow("")
-    var startLat: Double = -31.9505
-    var startLon: Double = 115.8605
+    var startLat: Double = 0.0
+    var startLon: Double = 0.0
 
     var endAddressText = MutableStateFlow("")
-    var endLat: Double = -31.9505
-    var endLon: Double = 115.8605
+    var endLat: Double = 0.0
+    var endLon: Double = 0.0
 
     val viaStops = MutableStateFlow<List<ViaStopData>>(emptyList())
 
@@ -174,12 +174,12 @@ class RoutePlannerViewModel @Inject constructor(
 
     fun clearAllInputs() {
         startAddressText.value = ""
-        startLat = -31.9505
-        startLon = 115.8605
+        startLat = 0.0
+        startLon = 0.0
 
         endAddressText.value = ""
-        endLat = -31.9505
-        endLon = 115.8605
+        endLat = 0.0
+        endLon = 0.0
 
         viaStops.value = emptyList()
         startSuggestions.value = emptyList()

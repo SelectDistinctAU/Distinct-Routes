@@ -144,7 +144,7 @@ fun MapViewContainer(
                         position = GeoPoint(viaPair.first, viaPair.second)
                         title = "Via Stop #${idx + 1}"
                         icon = viaIcon
-                        setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
+                        setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
                         isDraggable = true
                         setOnMarkerDragListener(object : Marker.OnMarkerDragListener {
                             override fun onMarkerDrag(marker: Marker) {}
@@ -178,8 +178,8 @@ fun MapViewContainer(
             }
 
             // Center map on Start location or Perth
-            val centerLat = if (startLat != 0.0) startLat else -31.9505
-            val centerLon = if (startLon != 0.0) startLon else 115.8605
+            val centerLat = if (startLat != 0.0) startLat else if (endLat != 0.0) endLat else -31.9505
+            val centerLon = if (startLon != 0.0) startLon else if (endLon != 0.0) endLon else 115.8605
             map.controller.setCenter(GeoPoint(centerLat, centerLon))
             map.invalidate()
         }
@@ -192,13 +192,19 @@ fun createBbbikeStartPin(context: Context): Drawable {
     val canvas = Canvas(bitmap)
 
     val pinPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = android.graphics.Color.parseColor("#1B5E20")
+        color = android.graphics.Color.parseColor("#1B5E20") // Emerald Green
         style = Paint.Style.FILL
     }
+    val radius = size * 0.32f
+    val centerX = size / 2f
+    val centerY = radius + 4f
+
+    canvas.drawCircle(centerX, centerY, radius, pinPaint)
+
     val path = Path().apply {
-        moveTo(size / 2f, size.toFloat())
-        cubicTo(size * 0.1f, size * 0.5f, 0f, size * 0.35f, size / 2f, 0f)
-        cubicTo(size.toFloat(), size * 0.35f, size * 0.9f, size * 0.5f, size / 2f, size.toFloat())
+        moveTo(centerX - radius * 0.85f, centerY + radius * 0.4f)
+        lineTo(centerX, size.toFloat() - 4f)
+        lineTo(centerX + radius * 0.85f, centerY + radius * 0.4f)
         close()
     }
     canvas.drawPath(path, pinPaint)
@@ -207,7 +213,7 @@ fun createBbbikeStartPin(context: Context): Drawable {
         color = android.graphics.Color.WHITE
         style = Paint.Style.FILL
     }
-    canvas.drawCircle(size / 2f, size * 0.35f, size * 0.18f, innerPaint)
+    canvas.drawCircle(centerX, centerY, radius * 0.45f, innerPaint)
 
     return BitmapDrawable(context.resources, bitmap)
 }
@@ -218,13 +224,19 @@ fun createBbbikeEndPin(context: Context): Drawable {
     val canvas = Canvas(bitmap)
 
     val pinPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = android.graphics.Color.parseColor("#B71C1C")
+        color = android.graphics.Color.parseColor("#B71C1C") // Crimson Red
         style = Paint.Style.FILL
     }
+    val radius = size * 0.32f
+    val centerX = size / 2f
+    val centerY = radius + 4f
+
+    canvas.drawCircle(centerX, centerY, radius, pinPaint)
+
     val path = Path().apply {
-        moveTo(size / 2f, size.toFloat())
-        cubicTo(size * 0.1f, size * 0.5f, 0f, size * 0.35f, size / 2f, 0f)
-        cubicTo(size.toFloat(), size * 0.35f, size * 0.9f, size * 0.5f, size / 2f, size.toFloat())
+        moveTo(centerX - radius * 0.85f, centerY + radius * 0.4f)
+        lineTo(centerX, size.toFloat() - 4f)
+        lineTo(centerX + radius * 0.85f, centerY + radius * 0.4f)
         close()
     }
     canvas.drawPath(path, pinPaint)
@@ -233,27 +245,39 @@ fun createBbbikeEndPin(context: Context): Drawable {
         color = android.graphics.Color.WHITE
         style = Paint.Style.FILL
     }
-    canvas.drawCircle(size / 2f, size * 0.35f, size * 0.18f, innerPaint)
+    canvas.drawCircle(centerX, centerY, radius * 0.45f, innerPaint)
 
     return BitmapDrawable(context.resources, bitmap)
 }
 
 fun createBbbikeViaPin(context: Context): Drawable {
-    val size = 48
+    val size = 64
     val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
     val canvas = Canvas(bitmap)
 
-    val outerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = android.graphics.Color.parseColor("#F57F17")
+    val pinPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.parseColor("#E65100") // Amber Orange
         style = Paint.Style.FILL
     }
-    canvas.drawCircle(size / 2f, size / 2f, size / 2f, outerPaint)
+    val radius = size * 0.32f
+    val centerX = size / 2f
+    val centerY = radius + 4f
+
+    canvas.drawCircle(centerX, centerY, radius, pinPaint)
+
+    val path = Path().apply {
+        moveTo(centerX - radius * 0.85f, centerY + radius * 0.4f)
+        lineTo(centerX, size.toFloat() - 4f)
+        lineTo(centerX + radius * 0.85f, centerY + radius * 0.4f)
+        close()
+    }
+    canvas.drawPath(path, pinPaint)
 
     val innerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = android.graphics.Color.WHITE
         style = Paint.Style.FILL
     }
-    canvas.drawCircle(size / 2f, size / 2f, size / 4f, innerPaint)
+    canvas.drawCircle(centerX, centerY, radius * 0.45f, innerPaint)
 
     return BitmapDrawable(context.resources, bitmap)
 }
