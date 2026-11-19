@@ -64,8 +64,8 @@ class GeocodingUseCase @Inject constructor(
                 val addrMap = dto.address
                 if (addrMap != null) {
                     val featureName = addrMap["amenity"] ?: addrMap["building"] ?: addrMap["shop"] ?: addrMap["historic"]
-                    val road = addrMap["road"] ?: addrMap["pedestrian"] ?: addrMap["footway"] ?: addrMap["cycleway"]
-                    val suburb = addrMap["suburb"] ?: addrMap["neighbourhood"] ?: addrMap["town"] ?: addrMap["city"]
+                    val road = addrMap["road"] ?: addrMap["pedestrian"] ?: addrMap["footway"] ?: addrMap["cycleway"] ?: addrMap["path"] ?: addrMap["track"]
+                    val suburb = addrMap["suburb"] ?: addrMap["neighbourhood"] ?: addrMap["quarter"] ?: addrMap["city_district"] ?: addrMap["town"] ?: addrMap["city"]
                     val houseNumber = addrMap["house_number"]
 
                     val constructed = buildList {

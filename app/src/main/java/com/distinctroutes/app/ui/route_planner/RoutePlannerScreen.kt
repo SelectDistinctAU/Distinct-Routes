@@ -512,9 +512,10 @@ fun RoutePlannerScreen(
                                                 }
                                             ) {
                                                 Icon(
-                                                    imageVector = Icons.Default.Bookmark,
+                                                    painter = painterResource(R.drawable.bookmark_heart),
                                                     contentDescription = "Save Departure as a Saved Place",
-                                                    tint = MaterialTheme.colorScheme.primary
+                                                    tint = MaterialTheme.colorScheme.primary,
+                                                    modifier = Modifier.size(20.dp)
                                                 )
                                             }
                                         }
@@ -660,7 +661,12 @@ fun RoutePlannerScreen(
                                 .height(44.dp)
                                 .semantics { contentDescription = "Add mid-point via stop button" }
                         ) {
-                            Icon(Icons.Default.Add, contentDescription = null)
+                            Icon(
+                                painter = painterResource(R.drawable.add_location),
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = if (viaStops.isEmpty()) stringResource(R.string.btn_add_via_stop) else "Add Another Detour Stop (Trail/Loop)",
@@ -703,9 +709,10 @@ fun RoutePlannerScreen(
                                                     }
                                                 ) {
                                                     Icon(
-                                                        imageVector = Icons.Default.Bookmark,
+                                                        painter = painterResource(R.drawable.bookmark_heart),
                                                         contentDescription = "Save Destination as a Saved Place",
-                                                        tint = MaterialTheme.colorScheme.primary
+                                                        tint = MaterialTheme.colorScheme.primary,
+                                                        modifier = Modifier.size(20.dp)
                                                     )
                                                 }
                                             }
@@ -1177,9 +1184,9 @@ fun SavePlaceDialog(
                         leadingIcon = { Icon(Icons.Default.Work, contentDescription = null, modifier = Modifier.size(16.dp)) }
                     )
                     FilterChip(
-                        selected = iconType == "BIKE_SHOP",
-                        onClick = { iconType = "BIKE_SHOP" },
-                        label = { Text("Bike Shop") },
+                        selected = iconType == "PLACE",
+                        onClick = { iconType = "PLACE" },
+                        label = { Text("Place") },
                         leadingIcon = { Icon(Icons.Default.Place, contentDescription = null, modifier = Modifier.size(16.dp)) }
                     )
                 }

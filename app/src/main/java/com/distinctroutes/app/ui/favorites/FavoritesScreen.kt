@@ -124,7 +124,7 @@ fun FavoritesScreen(
                 selected = selectedTab == 1,
                 onClick = { selectedTab = 1 },
                 label = { Text("Places (${savedPlaces.size})") },
-                leadingIcon = { Icon(Icons.Default.Place, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                leadingIcon = { Icon(painter = painterResource(R.drawable.bookmark_heart), contentDescription = null, modifier = Modifier.size(16.dp)) }
             )
             FilterChip(
                 selected = selectedTab == 2,

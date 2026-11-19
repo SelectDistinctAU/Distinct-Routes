@@ -26,7 +26,8 @@ interface NominatimApiService {
     suspend fun reverseGeocode(
         @Query("lat") lat: Double,
         @Query("lon") lon: Double,
-        @Query("format") format: String = "json",
+        @Query("format") format: String = "jsonv2",
+        @Query("addressdetails") addressdetails: Int = 1,
         @Query("accept-language") acceptLanguage: String = "en",
         @Header("User-Agent") userAgent: String = "DistinctRoutes/0.1.0 (distinctroutes@pm.me; Android)"
     ): Response<ReverseGeocodeDto>
