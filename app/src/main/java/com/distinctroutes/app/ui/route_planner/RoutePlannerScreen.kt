@@ -593,7 +593,7 @@ fun RoutePlannerScreen(
                                 OutlinedTextField(
                                     value = stop.addressText,
                                     onValueChange = { newAddr ->
-                                        stop.addressText = newAddr
+                                        viewModel.updateViaStopAddress(stop.id, newAddr)
                                         viewModel.searchAddress(newAddr, field = stop.id)
                                     },
                                     label = { Text("Detour Stop #${index + 1}") },

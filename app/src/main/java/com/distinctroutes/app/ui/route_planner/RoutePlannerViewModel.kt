@@ -34,9 +34,9 @@ sealed class RoutePlannerUiState {
 
 data class ViaStopData(
     val id: String = UUID.randomUUID().toString(),
-    var addressText: String = "",
-    var lat: Double = 0.0,
-    var lon: Double = 0.0
+    val addressText: String = "",
+    val lat: Double = 0.0,
+    val lon: Double = 0.0
 )
 
 @HiltViewModel
@@ -146,6 +146,15 @@ class RoutePlannerViewModel @Inject constructor(
         viaStops.value = current
     }
 
+    fun updateViaStopAddress(id: String, newAddress: String) {
+        val current = viaStops.value.toMutableList()
+        val idx = current.indexOfFirst { it.id == id }
+        if (idx != -1) {
+            current[idx] = current[idx].copy(addressText = newAddress)
+            viaStops.value = current
+        }
+    }
+
     fun removeViaStop(id: String) {
         val current = viaStops.value.toMutableList()
         current.removeAll { it.id == id }
@@ -253,11 +262,11 @@ class RoutePlannerViewModel @Inject constructor(
                 endSuggestions.value = emptyList()
             }
             else -> {
-                val stop = viaStops.value.find { it.id == field }
-                if (stop != null) {
-                    stop.addressText = location.displayName
-                    stop.lat = location.lat
-                    stop.lon = location.lon
+                val current = viaStops.value.toMutableList()
+                val idx = current.indexOfFirst { it.id == field }
+                if (idx != -1) {
+                    current[idx] = current[idx].copy(addressText = location.displayName, lat = location.lat, lon = location.lon)
+                    viaStops.value = current
                 }
                 viaSuggestions.value = emptyList()
             }
@@ -267,6 +276,7 @@ class RoutePlannerViewModel @Inject constructor(
     fun setStartFromMap(lat: Double, lon: Double) {
         startLat = lat
         startLon = lon
+        startAddressText.value = "Resolving location..."
         viewModelScope.launch {
             geocodingUseCase.reverseGeocode(lat, lon).onSuccess { address ->
                 startAddressText.value = address
@@ -277,6 +287,7 @@ class RoutePlannerViewModel @Inject constructor(
     fun setEndFromMap(lat: Double, lon: Double) {
         endLat = lat
         endLon = lon
+        endAddressText.value = "Resolving location..."
         viewModelScope.launch {
             geocodingUseCase.reverseGeocode(lat, lon).onSuccess { address ->
                 endAddressText.value = address
@@ -285,9 +296,17 @@ class RoutePlannerViewModel @Inject constructor(
     }
 
     fun addViaFromMap(lat: Double, lon: Double) {
+        val stopId = UUID.randomUUID().toString()
+        val newStop = ViaStopData(id = stopId, addressText = "Resolving location...", lat = lat, lon = lon)
+        viaStops.value = viaStops.value + newStop
         viewModelScope.launch {
             geocodingUseCase.reverseGeocode(lat, lon).onSuccess { address ->
-                addViaStop(address = address, lat = lat, lon = lon)
+                val current = viaStops.value.toMutableList()
+                val idx = current.indexOfFirst { it.id == stopId }
+                if (idx != -1) {
+                    current[idx] = current[idx].copy(addressText = address)
+                    viaStops.value = current
+                }
             }
         }
     }
@@ -299,6 +318,7 @@ class RoutePlannerViewModel @Inject constructor(
             if (location != null) {
                 startLat = location.lat
                 startLon = location.lon
+                startAddressText.value = "Resolving location..."
                 geocodingUseCase.reverseGeocode(location.lat, location.lon).onSuccess { address ->
                     startAddressText.value = address
                 }
@@ -312,6 +332,7 @@ class RoutePlannerViewModel @Inject constructor(
     fun onStartPinMoved(lat: Double, lon: Double) {
         startLat = lat
         startLon = lon
+        startAddressText.value = "Resolving location..."
         viewModelScope.launch {
             geocodingUseCase.reverseGeocode(lat, lon).onSuccess { address ->
                 startAddressText.value = address
@@ -322,6 +343,7 @@ class RoutePlannerViewModel @Inject constructor(
     fun onEndPinMoved(lat: Double, lon: Double) {
         endLat = lat
         endLon = lon
+        endAddressText.value = "Resolving location..."
         viewModelScope.launch {
             geocodingUseCase.reverseGeocode(lat, lon).onSuccess { address ->
                 endAddressText.value = address
@@ -330,14 +352,19 @@ class RoutePlannerViewModel @Inject constructor(
     }
 
     fun onViaPinMoved(index: Int, lat: Double, lon: Double) {
-        val currentList = viaStops.value
-        if (index in currentList.indices) {
-            val stop = currentList[index]
-            stop.lat = lat
-            stop.lon = lon
+        val current = viaStops.value.toMutableList()
+        if (index in current.indices) {
+            val stopId = current[index].id
+            current[index] = current[index].copy(addressText = "Resolving location...", lat = lat, lon = lon)
+            viaStops.value = current
             viewModelScope.launch {
                 geocodingUseCase.reverseGeocode(lat, lon).onSuccess { address ->
-                    stop.addressText = address
+                    val updated = viaStops.value.toMutableList()
+                    val idx = updated.indexOfFirst { it.id == stopId }
+                    if (idx != -1) {
+                        updated[idx] = updated[idx].copy(addressText = address)
+                        viaStops.value = updated
+                    }
                 }
             }
         }
@@ -345,7 +372,7 @@ class RoutePlannerViewModel @Inject constructor(
 
     fun calculateRoute() {
         if (startAddressText.value.isBlank() || endAddressText.value.isBlank()) {
-            _uiState.value = RoutePlannerUiState.Error("Please enter both a Start and Destination address.")
+            _uiState.value = RoutePlannerUiState.Error("Please enter both a Departure and Destination point.")
             return
         }
 
