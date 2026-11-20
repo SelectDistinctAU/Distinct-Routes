@@ -297,7 +297,7 @@ fun OnboardingDialog(
                             verticalArrangement = Arrangement.spacedBy(10.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text("📍 Long-Press Map Navigation: Long-press anywhere on the map to set Departure, Detours, or Destination.")
+                            Text("📍 Long-Press Map Navigation: Long-press anywhere on the map to set Departure, Waypoints, or Destination.")
                             Text("⭐ Save Favourites & Ride Journal: Save frequent routes or auto-log completed rides on-device.")
                             Text("⚙️ Flexible Overlay: Collapse the search inputs card anytime for an unobstructed 90%+ map view.")
                         }

@@ -89,7 +89,7 @@ fun MapViewContainer(
             .fillMaxSize()
             .clipToBounds()
             .semantics {
-                this.contentDescription = "Interactive OpenStreetMap view showing Start, Destination, and optional Via Stop pins"
+                contentDescription = "Interactive OpenStreetMap view showing Start, Destination, and optional Via Stop pins"
             },
         update = { map ->
             try {

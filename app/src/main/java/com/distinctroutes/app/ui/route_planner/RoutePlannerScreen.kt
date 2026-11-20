@@ -1,5 +1,6 @@
 package com.distinctroutes.app.ui.route_planner
 
+import com.distinctroutes.app.ui.onboarding.OnboardingDialog
 import android.Manifest
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -92,8 +93,7 @@ import com.distinctroutes.app.R
 import com.distinctroutes.app.domain.model.BikeType
 import com.distinctroutes.app.domain.model.FavoriteRoute
 import com.distinctroutes.app.ui.favorites.FavoritesViewModel
-import com.distinctroutes.app.ui.theme.CardShape
-import com.distinctroutes.app.ui.theme.PillShape
+import com.distinctroutes.app.ui.onboarding.OnboardingDialog
 import kotlinx.coroutines.delay
 
 @Composable
@@ -233,7 +233,7 @@ fun RoutePlannerScreen(
                 }
             )
             DropdownMenuItem(
-                text = { Text("● Add Detour (${viaStops.size + 1})") },
+                text = { Text("● Add Waypoint (${viaStops.size + 1})") },
                 onClick = {
                     viewModel.addViaFromMap(longPressLat, longPressLon)
                     showLongPressMenu = false
@@ -596,7 +596,7 @@ fun RoutePlannerScreen(
                                         viewModel.updateViaStopAddress(stop.id, newAddr)
                                         viewModel.searchAddress(newAddr, field = stop.id)
                                     },
-                                    label = { Text("Detour Stop #${index + 1}") },
+                                    label = { Text("Waypoint #${index + 1}") },
                                     leadingIcon = { Icon(Icons.Default.Place, contentDescription = "Yellow Via Stop Dot icon") },
                                     trailingIcon = {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -669,7 +669,7 @@ fun RoutePlannerScreen(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = if (viaStops.isEmpty()) stringResource(R.string.btn_add_via_stop) else "Add Another Detour Stop (Trail/Loop)",
+                                text = if (viaStops.isEmpty()) stringResource(R.string.btn_add_via_stop) else "Add Another Waypoint (Trail/Loop)",
                                 style = MaterialTheme.typography.titleSmall
                             )
                         }

@@ -53,7 +53,7 @@ class NetworkModule {
             )
             .addInterceptor { chain ->
                 val request = chain.request().newBuilder()
-                    .header("User-Agent", "DistinctRoutes/0.1.0 (Android; OpenSource Cycling Navigator)")
+                    .header("User-Agent", "DistinctRoutes/0.2.0 (distinctroutes@pm.me; Android)")
                     .build()
                 chain.proceed(request)
             }
