@@ -84,9 +84,9 @@ class GeocodingUseCase @Inject constructor(
                     return Result.success(formatShortAddress(dto.display_name))
                 }
             }
-            Result.success("Map Pin Location")
+            Result.success("Point (%.4f, %.4f)".format(lat, lon))
         } catch (e: Exception) {
-            Result.success("Map Pin Location")
+            Result.success("Point (%.4f, %.4f)".format(lat, lon))
         }
     }
 
